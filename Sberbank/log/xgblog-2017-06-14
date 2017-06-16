@@ -1,0 +1,2 @@
+2017-06-14 17:25:12,606 - DEBUG Arguments: Namespace(algo='lgb', paramset=2, reduceData=0, srcargs=1, xgbcv=0)
+

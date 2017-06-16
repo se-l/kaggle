@@ -421,7 +421,7 @@ print('Opt1 params: {}'.format(xgb_params))
 
 # num_boost_rounds = 422
 model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
-
+pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 #fig, ax = plt.subplots(1, 1, figsize=(8, 13))
 #xgb.plot_importance(model, max_num_features=50, height=0.5, ax=ax)
 
@@ -480,7 +480,7 @@ print('Opt2 params: {}'.format(xgb_params))
 pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 
 model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
-
+pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 y_predict = model.predict(dtest)
 output = pd.DataFrame({'id': id_test, 'price_doc': y_predict})
 # output.drop('average_q_price', axis=1, inplace=True)
@@ -613,7 +613,7 @@ print('Opt3 params: {}'.format(xgb_params))
 pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 
 model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
-
+pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 y_pred = model.predict(dtest)
 df_sub = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
 

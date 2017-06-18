@@ -423,7 +423,6 @@ if hyperP.gpu is not None:
     xgb_params['updater'] = hyperP.gpu
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-    'silent': 1,
 }
 
 print('Opt1 rounds: {}'.format(num_boost_rounds))
@@ -482,7 +481,9 @@ xgb_params = {
     'gamma': 0.1,
     'max_depth': 1,
     'min_child_weight': 3.0,
-    'subsample': 0.5}
+    'subsample': 0.5,
+    'silent': 1,
+}
 if hyperP.gpu is not None:
     xgb_params['updater'] = hyperP.gpu
 
@@ -511,7 +512,6 @@ print('Opt2 params: {}'.format(xgb_params))
 # pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-    'silent': 1,
 }
 model = xgb.train(xgb_params, dtrain, **xgb_args)
 pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
@@ -629,7 +629,9 @@ xgb_params = {
     'gamma': 0.3,
     'max_depth': 1,
     'min_child_weight': 2.0,
-    'subsample': 0.65}
+    'subsample': 0.65,
+    'silent': 1,
+}
 if hyperP.gpu is not None:
     xgb_params['updater'] = hyperP.gpu
 
@@ -656,7 +658,6 @@ print('Opt3 params: {}'.format(xgb_params))
 # pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-    'silent': 1,
 }
 model = xgb.train(xgb_params, dtrain, **xgb_args)
 pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))

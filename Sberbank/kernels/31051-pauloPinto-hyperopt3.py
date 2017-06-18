@@ -23,7 +23,7 @@ from hyperopt import STATUS_OK, Trials, fmin, hp, tpe, space_eval
 import pickle
 import getpass
 import os
-from utils.utils import dotdict
+from utils.utils import dotdict, Logger
 import math
 import argparse
 
@@ -37,6 +37,9 @@ if os.name == 'posix':
 else:
     projectDir = r'C:\repos\kaggle\Sberbank'
     histData = r'C:\quant\histData\bitfinex\csvexport\BTCUSD'
+
+Logger.init_log(os.path.join(projectDir, 'log/LogSberbankb-{}'.format(datetime.date.today())))
+Logger.debug('Arguments: {}'.format(args))
 
 hyperP = dotdict([
     ('nfold', 10),
@@ -424,10 +427,12 @@ if hyperP.gpu is not None:
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
 }
+Logger.info('Opt1 rounds / params / args:\n{}\n{}\n{}'.format(
+    num_boost_rounds,
+    xgb_params,
+    xgb_args
+))
 
-print('Opt1 rounds: {}'.format(num_boost_rounds))
-print('Opt1 params: {}'.format(xgb_params))
-print('Opt1 params: {}'.format(xgb_args))
 # pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 # num_boost_rounds = 422
 model = xgb.train(xgb_params, dtrain, **xgb_args)
@@ -491,8 +496,8 @@ dtrain = xgb.DMatrix(x_train, y_train)
 dtest = xgb.DMatrix(x_test)
 
 cv_output = xgb.cv(xgb_params, dtrain,
-                   num_boost_round=5000,
-                   early_stopping_rounds=100,
+                   num_boost_round=10000,
+                   early_stopping_rounds=200,
                    verbose_eval=25,
                    show_stdv=False,
                    nfold=hyperP.nfold,
@@ -503,9 +508,15 @@ num_boost_rounds = len(cv_output) # 382
 
 # trials2 = Trials()
 # xgb_params, num_boost_rounds = optimize(trials2, space, scorecv)
-print(cv_output)
-print('Opt2 rounds: {}'.format(num_boost_rounds))
-print('Opt2 params: {}'.format(xgb_params))
+
+Logger.info('Opt2 CV output: {}\n'.format(
+    cv_output
+))
+Logger.info('Opt2 rounds / params / args:\n{}\n{}\n{}'.format(
+    num_boost_rounds,
+    xgb_params,
+    xgb_args
+))
 
 # opt2 boost rounds = 1000 gotta re-run again with more rounds
 # Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
@@ -639,26 +650,29 @@ dtrain = xgb.DMatrix(X_train, y_train, feature_names=df_columns)
 dtest = xgb.DMatrix(X_test, feature_names=df_columns)
 
 cv_output = xgb.cv(xgb_params, dtrain,
-                   num_boost_round=5000,
-                   early_stopping_rounds=100,
+                   num_boost_round=10000,
+                   early_stopping_rounds=200,
                    verbose_eval=25,
                    show_stdv=False,
                    nfold=hyperP.nfold)
 
 # print('best num_boost_rounds = ', len(cv_output))
 print(cv_output)
-num_boost_rounds = len(cv_output) #
+num_boost_rounds = len(cv_output)
 
 # num_boost_rounds = 420  # From Bruno's original CV, I think
 
 # trials3 = Trials()
 # xgb_params, num_boost_rounds = optimize(trials3, space, scorecv)
-print('Opt3 rounds: {}'.format(num_boost_rounds))
-print('Opt3 params: {}'.format(xgb_params))
 # pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
 }
+Logger.info('Opt3 rounds / params / args:\n{}\n{}\n{}'.format(
+    num_boost_rounds,
+    xgb_params,
+    xgb_args
+))
 model = xgb.train(xgb_params, dtrain, **xgb_args)
 pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 y_pred = model.predict(dtest)
@@ -673,9 +687,10 @@ result = first_result.merge(gunja_output, on="id", suffixes=['_follow','_gunja']
 result["price_doc"] = np.exp( .78*np.log(result.price_doc_follow) +
                               .22*np.log(result.price_doc_gunja) )
 result.drop(["price_doc_louis","price_doc_bruno","price_doc_follow","price_doc_gunja"],axis=1,inplace=True)
-result.head()
+
+
+
 result.to_csv(os.path.join(projectDir,'subm/silly-{}.csv'.format(
     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),
               index=False)
-pickle.dump(model, open(os.path.join(projectDir, 'model/{}.xgb_model'.format(
-    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), 'wb'))
+

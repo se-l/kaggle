@@ -412,15 +412,18 @@ xgb_params = {'colsample_bytree': 0.7000000000000001,
               'silent': 1,
               'subsample': 0.6000000000000001,
               'tree_method': 'exact',
-              'updater': 'grow_gpu',
+              'updater': hyperP.gpu,
               'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
+xgb_args = {
+    'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+}
 
 print('Opt1 rounds: {}'.format(num_boost_rounds))
 print('Opt1 params: {}'.format(xgb_params))
+print('Opt1 params: {}'.format(xgb_args))
 # pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-
 # num_boost_rounds = 422
-model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
+model = xgb.train(xgb_params, dtrain, **xgb_args)
 pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 #fig, ax = plt.subplots(1, 1, figsize=(8, 13))
 #xgb.plot_importance(model, max_num_features=50, height=0.5, ax=ax)
@@ -471,7 +474,8 @@ xgb_params = {
     'gamma': 0.1,
     'max_depth': 1,
     'min_child_weight': 3.0,
-    'subsample': 0.5}
+    'subsample': 0.5,
+    'updater': hyperP.gpu}
 
 dtrain = xgb.DMatrix(x_train, y_train)
 dtest = xgb.DMatrix(x_test)
@@ -482,7 +486,7 @@ cv_output = xgb.cv(xgb_params, dtrain,
                    verbose_eval=25,
                    show_stdv=False,
                    nfold=hyperP.nfold,
-                   updater='grow_gpu')
+                   )
 
 num_boost_rounds = len(cv_output) # 382
 # num_boost_rounds = 385  # This was the CV output, as earlier version shows
@@ -495,8 +499,6 @@ print('Opt2 params: {}'.format(xgb_params))
 
 # opt2 boost rounds = 1000 gotta re-run again with more rounds
 # Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
-
-
 # pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 
 model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
@@ -615,7 +617,8 @@ xgb_params = {
     'gamma': 0.3,
     'max_depth': 1,
     'min_child_weight': 2.0,
-    'subsample': 0.65}
+    'subsample': 0.65,
+    'updater': hyperP.gpu}
 
 dtrain = xgb.DMatrix(X_train, y_train, feature_names=df_columns)
 dtest = xgb.DMatrix(X_test, feature_names=df_columns)
@@ -625,8 +628,7 @@ cv_output = xgb.cv(xgb_params, dtrain,
                    early_stopping_rounds=100,
                    verbose_eval=25,
                    show_stdv=False,
-                   nfold=hyperP.nfold,
-                   updater='grow_gpu')
+                   nfold=hyperP.nfold)
 
 # print('best num_boost_rounds = ', len(cv_output))
 print(cv_output)

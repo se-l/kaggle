@@ -417,8 +417,9 @@ xgb_params = {'colsample_bytree': 0.7000000000000001,
               'silent': 1,
               'subsample': 0.6000000000000001,
               'tree_method': 'exact',
-              'updater': hyperP.gpu,
               'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
+if hyperP.gpu is not None:
+    xgb_params['updater'] = hyperP.gpu
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
 }
@@ -479,8 +480,9 @@ xgb_params = {
     'gamma': 0.1,
     'max_depth': 1,
     'min_child_weight': 3.0,
-    'subsample': 0.5,
-    'updater': hyperP.gpu}
+    'subsample': 0.5}
+if hyperP.gpu is not None:
+    xgb_params['updater'] = hyperP.gpu
 
 dtrain = xgb.DMatrix(x_train, y_train)
 dtest = xgb.DMatrix(x_test)
@@ -622,8 +624,9 @@ xgb_params = {
     'gamma': 0.3,
     'max_depth': 1,
     'min_child_weight': 2.0,
-    'subsample': 0.65,
-    'updater': hyperP.gpu}
+    'subsample': 0.65}
+if hyperP.gpu is not None:
+    xgb_params['updater'] = hyperP.gpu
 
 dtrain = xgb.DMatrix(X_train, y_train, feature_names=df_columns)
 dtest = xgb.DMatrix(X_test, feature_names=df_columns)

@@ -25,6 +25,11 @@ import getpass
 import os
 from utils.utils import dotdict
 import math
+import argparse
+
+parser = argparse.ArgumentParser(description='Pattern finder - GBM')
+parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
+args = parser.parse_args()
 
 if os.name == 'posix':
     projectDir = r'/home/' + getpass.getuser() + r'/repos/kaggle/Sberbank'
@@ -39,8 +44,8 @@ hyperP = dotdict([
     ('num_boost_round', 1000),
     ('boostMulti', 1.05),
     ('gpu', 'grow_gpu')
-    # ('gpu', None)
 ])
+hyperP.gpu = None if args.gpu == '0' else hyperP.gpu
 
 space = {
     'learning_rate': 0.01,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01),

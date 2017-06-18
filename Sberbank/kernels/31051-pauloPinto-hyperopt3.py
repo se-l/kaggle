@@ -106,6 +106,7 @@ def optimize(trials, space, scoreFunc):
             trials.best_trial['result']['bestIter']]
 
 if True:
+
     #load files
     train = pd.read_csv(os.path.join(projectDir,'input/train.csv'), parse_dates=['timestamp'])
     test = pd.read_csv(os.path.join(projectDir,'input/test.csv'), parse_dates=['timestamp'])
@@ -422,6 +423,7 @@ if hyperP.gpu is not None:
     xgb_params['updater'] = hyperP.gpu
 xgb_args = {
     'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    'silent': 1,
 }
 
 print('Opt1 rounds: {}'.format(num_boost_rounds))
@@ -507,8 +509,11 @@ print('Opt2 params: {}'.format(xgb_params))
 # opt2 boost rounds = 1000 gotta re-run again with more rounds
 # Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
 # pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-
-model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
+xgb_args = {
+    'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    'silent': 1,
+}
+model = xgb.train(xgb_params, dtrain, **xgb_args)
 pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 y_predict = model.predict(dtest)
 output = pd.DataFrame({'id': id_test, 'price_doc': y_predict})
@@ -649,8 +654,11 @@ num_boost_rounds = len(cv_output) #
 print('Opt3 rounds: {}'.format(num_boost_rounds))
 print('Opt3 params: {}'.format(xgb_params))
 # pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-
-model = xgb.train(dict(xgb_params, silent=0), dtrain, num_boost_round=math.ceil(num_boost_rounds*hyperP.boostMulti))
+xgb_args = {
+    'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    'silent': 1,
+}
+model = xgb.train(xgb_params, dtrain, **xgb_args)
 pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 y_pred = model.predict(dtest)
 df_sub = pd.DataFrame({'id': id_test, 'price_doc': y_pred})

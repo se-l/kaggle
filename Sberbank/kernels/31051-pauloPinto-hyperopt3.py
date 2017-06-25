@@ -44,7 +44,7 @@ Logger.debug('Arguments: {}'.format(args))
 hyperP = dotdict([
     ('nfold', 10),
     ('max_evals', 15),
-    ('num_boost_round', 1000),
+    ('num_boost_round', 20000),
     ('boostMulti', 1.00),
     ('gpu', 'grow_gpu'),
     ('loadModel', 0)
@@ -52,7 +52,7 @@ hyperP = dotdict([
 hyperP.gpu = None if args.gpu == '0' else hyperP.gpu
 
 space = {
-    'learning_rate': 0.01,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01),
+    'learning_rate': 0.03,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01),
     'max_depth': hp.choice('max_depth', np.arange(5, 7, dtype=int)),
     'min_child_weight': hp.quniform('min_child_weight', 1, 3, 1),
     'subsample': hp.quniform('subsample', 0.5, 0.7, 0.05),
@@ -79,7 +79,7 @@ space = {
     'xgbArgs': {
         'num_boost_round': hyperP.num_boost_round,  # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
         'early_stopping_rounds': 50,
-        'verbose_eval': 50,
+        'verbose_eval': 100,
         'show_stdv': False,
         'nfold': hyperP.nfold
     }}
@@ -489,7 +489,7 @@ if hyperP.loadModel == 0:
         'objective': 'reg:linear',
         'eval_metric': 'rmse',
         'tree_method': 'exact',
-        'eta': 0.02,
+        'eta': 0.03,
         'colsample_bytree': 0.9,
         'gamma': 0.1,
         'max_depth': 1,
@@ -501,9 +501,9 @@ if hyperP.loadModel == 0:
         xgb_params['updater'] = hyperP.gpu
 
     cv_output = xgb.cv(xgb_params, dtrain,
-                       num_boost_round=10000,
+                       num_boost_round=20000,
                        early_stopping_rounds=200,
-                       verbose_eval=25,
+                       verbose_eval=100,
                        show_stdv=False,
                        nfold=hyperP.nfold,
                        )
@@ -646,7 +646,7 @@ if hyperP.loadModel == 0:
         'objective': 'reg:linear',
         'eval_metric': 'rmse',
         'tree_method': 'exact',
-        'eta': 0.02,
+        'eta': 0.03,
         'colsample_bytree': 0.5,
         'gamma': 0.3,
         'max_depth': 1,
@@ -658,9 +658,9 @@ if hyperP.loadModel == 0:
         xgb_params['updater'] = hyperP.gpu
 
     cv_output = xgb.cv(xgb_params, dtrain,
-                       num_boost_round=10000,
+                       num_boost_round=20000,
                        early_stopping_rounds=200,
-                       verbose_eval=25,
+                       verbose_eval=100,
                        show_stdv=False,
                        nfold=hyperP.nfold)
 

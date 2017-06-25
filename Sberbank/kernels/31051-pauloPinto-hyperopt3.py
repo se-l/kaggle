@@ -45,8 +45,9 @@ hyperP = dotdict([
     ('nfold', 10),
     ('max_evals', 15),
     ('num_boost_round', 1000),
-    ('boostMulti', 1.05),
-    ('gpu', 'grow_gpu')
+    ('boostMulti', 1.00),
+    ('gpu', 'grow_gpu'),
+    ('loadModel', 0)
 ])
 hyperP.gpu = None if args.gpu == '0' else hyperP.gpu
 
@@ -401,44 +402,47 @@ if True:
     #     'objective': 'reg:linear',
     # }
 
-dtrain = xgb.DMatrix(x_train, y_train)
-dtest = xgb.DMatrix(x_test)
+    dtrain = xgb.DMatrix(x_train, y_train)
+    dtest = xgb.DMatrix(x_test)
+if hyperP.loadModel == 0:
 
-# cv_output = xgb.cv(xgb_params, dtrain, num_boost_round=1000, early_stopping_rounds=20,
-#     verbose_eval=20, show_stdv=False)
+    # cv_output = xgb.cv(xgb_params, dtrain, num_boost_round=1000, early_stopping_rounds=20,
+    #     verbose_eval=20, show_stdv=False)
 
-# trials1 = Trials()
-# xgb_params, num_boost_rounds = optimize(trials1, space, scorecv)
-num_boost_rounds=962
-xgb_params = {'colsample_bytree': 0.7000000000000001,
-              'eval_metric': 'rmse',
-              'gamma': 0.2,
-              'learning_rate': 0.04,
-              'max_depth': 5,
-              'min_child_weight': 1.0,
-              'objective': 'reg:linear',
-              'seed': 254,
-              'silent': 1,
-              'subsample': 0.6000000000000001,
-              'tree_method': 'exact',
-              'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
-if hyperP.gpu is not None:
-    xgb_params['updater'] = hyperP.gpu
-xgb_args = {
-    'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-}
-Logger.info('Opt1 rounds / params / args:\n{}\n{}\n{}'.format(
-    num_boost_rounds,
-    xgb_params,
-    xgb_args
-))
+    # trials1 = Trials()
+    # xgb_params, num_boost_rounds = optimize(trials1, space, scorecv)
+    num_boost_rounds=962
+    xgb_params = {'colsample_bytree': 0.7000000000000001,
+                  'eval_metric': 'rmse',
+                  'gamma': 0.2,
+                  'learning_rate': 0.04,
+                  'max_depth': 5,
+                  'min_child_weight': 1.0,
+                  'objective': 'reg:linear',
+                  'seed': 254,
+                  'silent': 1,
+                  'subsample': 0.6000000000000001,
+                  'tree_method': 'exact',
+                  'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
+    if hyperP.gpu is not None:
+        xgb_params['updater'] = hyperP.gpu
+    xgb_args = {
+        'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    }
+    Logger.info('Opt1 rounds / params / args:\n{}\n{}\n{}'.format(
+        num_boost_rounds,
+        xgb_params,
+        xgb_args
+    ))
 
-# pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-# num_boost_rounds = 422
-model = xgb.train(xgb_params, dtrain, **xgb_args)
-pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-#fig, ax = plt.subplots(1, 1, figsize=(8, 13))
-#xgb.plot_importance(model, max_num_features=50, height=0.5, ax=ax)
+    # pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    # num_boost_rounds = 422
+    model = xgb.train(xgb_params, dtrain, **xgb_args)
+    pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    #fig, ax = plt.subplots(1, 1, figsize=(8, 13))
+    #xgb.plot_importance(model, max_num_features=50, height=0.5, ax=ax)
+else:
+    model = pickle.load(open(r'C:\repos\kaggle\Sberbank\model\2017-06-18_10-15-41.Sberbankmodel1', 'rb'))
 
 y_predict = model.predict(dtest)
 # y_predict = np.round(y_predict)
@@ -469,63 +473,66 @@ for c in x_test.columns:
         lbl.fit(list(x_test[c].values))
         x_test[c] = lbl.transform(list(x_test[c].values))
 
-# xgb_params = {
-#     'eta': 0.05,
-#     'max_depth': 5,
-#     'subsample': 0.7,
-#     'colsample_bytree': 0.7,
-#     'objective': 'reg:linear',
-#     'eval_metric': 'rmse',
-#     'silent': 1
-xgb_params = {
-    'objective': 'reg:linear',
-    'eval_metric': 'rmse',
-    'tree_method': 'exact',
-    'eta': 0.01,
-    'colsample_bytree': 0.9,
-    'gamma': 0.1,
-    'max_depth': 1,
-    'min_child_weight': 3.0,
-    'subsample': 0.5,
-    'silent': 1,
-}
-if hyperP.gpu is not None:
-    xgb_params['updater'] = hyperP.gpu
-
 dtrain = xgb.DMatrix(x_train, y_train)
 dtest = xgb.DMatrix(x_test)
 
-cv_output = xgb.cv(xgb_params, dtrain,
-                   num_boost_round=10000,
-                   early_stopping_rounds=200,
-                   verbose_eval=25,
-                   show_stdv=False,
-                   nfold=hyperP.nfold,
-                   )
+if hyperP.loadModel == 0:
+    # xgb_params = {
+    #     'eta': 0.05,
+    #     'max_depth': 5,
+    #     'subsample': 0.7,
+    #     'colsample_bytree': 0.7,
+    #     'objective': 'reg:linear',
+    #     'eval_metric': 'rmse',
+    #     'silent': 1
+    xgb_params = {
+        'objective': 'reg:linear',
+        'eval_metric': 'rmse',
+        'tree_method': 'exact',
+        'eta': 0.01,
+        'colsample_bytree': 0.9,
+        'gamma': 0.1,
+        'max_depth': 1,
+        'min_child_weight': 3.0,
+        'subsample': 0.5,
+        'silent': 1,
+    }
+    if hyperP.gpu is not None:
+        xgb_params['updater'] = hyperP.gpu
 
-num_boost_rounds = len(cv_output) # 382
-# num_boost_rounds = 385  # This was the CV output, as earlier version shows
+    cv_output = xgb.cv(xgb_params, dtrain,
+                       num_boost_round=10000,
+                       early_stopping_rounds=200,
+                       verbose_eval=25,
+                       show_stdv=False,
+                       nfold=hyperP.nfold,
+                       )
 
-# trials2 = Trials()
-# xgb_params, num_boost_rounds = optimize(trials2, space, scorecv)
+    num_boost_rounds = len(cv_output) # 382
+    # num_boost_rounds = 385  # This was the CV output, as earlier version shows
 
-Logger.info('Opt2 CV output: {}\n'.format(
-    cv_output
-))
-Logger.info('Opt2 rounds / params / args:\n{}\n{}\n{}'.format(
-    num_boost_rounds,
-    xgb_params,
-    xgb_args
-))
+    # trials2 = Trials()
+    # xgb_params, num_boost_rounds = optimize(trials2, space, scorecv)
 
-# opt2 boost rounds = 1000 gotta re-run again with more rounds
-# Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
-# pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-xgb_args = {
-    'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-}
-model = xgb.train(xgb_params, dtrain, **xgb_args)
-pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    Logger.info('Opt2 CV output: {}\n'.format(
+        cv_output
+    ))
+    Logger.info('Opt2 rounds / params / args:\n{}\n{}\n{}'.format(
+        num_boost_rounds,
+        xgb_params,
+        xgb_args
+    ))
+
+    # opt2 boost rounds = 1000 gotta re-run again with more rounds
+    # Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
+    # pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    xgb_args = {
+        'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    }
+    model = xgb.train(xgb_params, dtrain, **xgb_args)
+    pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+else:
+    model = pickle.load(open(r'C:\repos\kaggle\Sberbank\model\2017-06-18_10-46-42.Sberbankmodel2', 'rb'))
 y_predict = model.predict(dtest)
 output = pd.DataFrame({'id': id_test, 'price_doc': y_predict})
 # output.drop('average_q_price', axis=1, inplace=True)
@@ -631,66 +638,72 @@ X_test = X_all[num_train:]
 
 df_columns = df_values.columns
 
-xgb_params = {
-    'objective': 'reg:linear',
-    'eval_metric': 'rmse',
-    'tree_method': 'exact',
-    'eta': 0.01,
-    'colsample_bytree': 0.5,
-    'gamma': 0.3,
-    'max_depth': 1,
-    'min_child_weight': 2.0,
-    'subsample': 0.65,
-    'silent': 1,
-}
-if hyperP.gpu is not None:
-    xgb_params['updater'] = hyperP.gpu
-
 dtrain = xgb.DMatrix(X_train, y_train, feature_names=df_columns)
 dtest = xgb.DMatrix(X_test, feature_names=df_columns)
 
-cv_output = xgb.cv(xgb_params, dtrain,
-                   num_boost_round=10000,
-                   early_stopping_rounds=200,
-                   verbose_eval=25,
-                   show_stdv=False,
-                   nfold=hyperP.nfold)
+if hyperP.loadModel == 0:
+    xgb_params = {
+        'objective': 'reg:linear',
+        'eval_metric': 'rmse',
+        'tree_method': 'exact',
+        'eta': 0.01,
+        'colsample_bytree': 0.5,
+        'gamma': 0.3,
+        'max_depth': 1,
+        'min_child_weight': 2.0,
+        'subsample': 0.65,
+        'silent': 1,
+    }
+    if hyperP.gpu is not None:
+        xgb_params['updater'] = hyperP.gpu
 
-# print('best num_boost_rounds = ', len(cv_output))
-print(cv_output)
-num_boost_rounds = len(cv_output)
+    cv_output = xgb.cv(xgb_params, dtrain,
+                       num_boost_round=10000,
+                       early_stopping_rounds=200,
+                       verbose_eval=25,
+                       show_stdv=False,
+                       nfold=hyperP.nfold)
 
-# num_boost_rounds = 420  # From Bruno's original CV, I think
+    # print('best num_boost_rounds = ', len(cv_output))
+    print(cv_output)
+    num_boost_rounds = len(cv_output)
 
-# trials3 = Trials()
-# xgb_params, num_boost_rounds = optimize(trials3, space, scorecv)
-# pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-xgb_args = {
-    'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-}
-Logger.info('Opt3 rounds / params / args:\n{}\n{}\n{}'.format(
-    num_boost_rounds,
-    xgb_params,
-    xgb_args
-))
-model = xgb.train(xgb_params, dtrain, **xgb_args)
-pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    # num_boost_rounds = 420  # From Bruno's original CV, I think
+
+    # trials3 = Trials()
+    # xgb_params, num_boost_rounds = optimize(trials3, space, scorecv)
+    # pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    xgb_args = {
+        'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    }
+    Logger.info('Opt3 rounds / params / args:\n{}\n{}\n{}'.format(
+        num_boost_rounds,
+        xgb_params,
+        xgb_args
+    ))
+    model = xgb.train(xgb_params, dtrain, **xgb_args)
+
+    pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+else:
+    model = pickle.load(open(r'C:\repos\kaggle\Sberbank\model\2017-06-18_11-18-01.Sberbankmodel3', 'rb'))
 y_pred = model.predict(dtest)
 df_sub = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
 
 df_sub.head()
 first_result = output.merge(df_sub, on="id", suffixes=['_louis','_bruno'])
+
 first_result["price_doc"] = np.exp( .714*np.log(first_result.price_doc_louis) +
                                     .286*np.log(first_result.price_doc_bruno) )  # multiplies out to .5 & .2
 result = first_result.merge(gunja_output, on="id", suffixes=['_follow','_gunja'])
-
+# result[first_result.isnull().any(axis=1)]
+result.loc[list(result[first_result.isnull().any(axis=1)].index), 'price_doc_follow'] = \
+    result.loc[list(result[first_result.isnull().any(axis=1)].index), 'price_doc_gunja']
 result["price_doc"] = np.exp( .78*np.log(result.price_doc_follow) +
                               .22*np.log(result.price_doc_gunja) )
 result.drop(["price_doc_louis","price_doc_bruno","price_doc_follow","price_doc_gunja"],axis=1,inplace=True)
 
-
-
 result.to_csv(os.path.join(projectDir,'subm/silly-{}.csv'.format(
-    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),
-              index=False)
+    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
+if False:
+    a=1

@@ -132,6 +132,7 @@ def getPoly(df):
     colNames = [str(x).replace(' ', '-') for x in colNames]
     d = pd.DataFrame(d, columns=colNames, index=df.index)
     d.drop([c for c in d.columns if c in df.columns], axis=1, inplace=True)
+    d = d.iloc[:,:10000]
     return pd.concat([df, d], axis=1)
 
 if True:

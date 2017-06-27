@@ -409,8 +409,8 @@ if True:
         colNames = [str(x).replace(' ', '-') for x in colNames]
         d = pd.DataFrame(d, columns=colNames)
         return pd.concat([df, d], axis=1)
-    x_all = getPoly(df=x_all)
-    print(x_all.shape)
+    # x_all = getPoly(df=x_all)
+    # print(x_all.shape)
     ###################### end poly interaction features ######################
 
     x_train = x_all[:num_train]

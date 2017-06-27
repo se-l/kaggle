@@ -29,8 +29,8 @@ import argparse
 from scipy.stats import norm
 
 parser = argparse.ArgumentParser(description='Pattern finder - GBM')
-# parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
-parser.add_argument('-gpu', action='store', help='', default='0')
+parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
+# parser.add_argument('-gpu', action='store', help='', default='0')
 args = parser.parse_args()
 
 if os.name == 'posix':

@@ -438,7 +438,7 @@ if hyperP.loadModel == 0:
             'eval_metric': 'rmse',
             'silent': 1
         }
-        num_boost_rounds = 422
+        num_boost_rounds = 739  # 422 from kaggle set
         xgb_args = {
             'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
         }
@@ -538,7 +538,8 @@ if hyperP.loadModel == 0:
             'eval_metric': 'rmse',
             'silent': 1
         }
-        num_boost_rounds = 385
+        # num_boost_rounds = len(cv_output) # 382    from kaggel
+        num_boost_rounds = 806
         xgb_args = {
             'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
         }
@@ -739,7 +740,7 @@ if hyperP.loadModel == 0:
             'eval_metric': 'rmse',
             'silent': 1
         }
-        num_boost_rounds = 420  # From Bruno's original CV, I think
+        num_boost_rounds = 957#420  # From Bruno's original CV, I think
         xgb_args = {
             'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
         }

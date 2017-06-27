@@ -29,6 +29,7 @@ import argparse
 from scipy.stats import norm
 from itertools import combinations
 from sklearn.preprocessing import PolynomialFeatures
+import gc
 
 parser = argparse.ArgumentParser(description='Pattern finder - GBM')
 parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
@@ -119,6 +120,17 @@ prediction_stderr = 0.0073  #  assumed standard error of predictions
 train_test_logmean_diff = 0.1  # assumed shift used to adjust frequencies for time trend
 probthresh = 90  # minimum probability*frequency to use new price instead of just rounding
 rounder = 2  # number of places left of decimal point to zero
+
+polyOn = False
+def getPoly(df):
+    dfT = df.fillna(value=0)
+    poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=True)
+    d = poly.fit_transform(dfT)
+    colNames = poly.get_feature_names(dfT.columns)
+    print("Total poly features length: {}".format(len(colNames)))
+    colNames = [str(x).replace(' ', '-') for x in colNames]
+    d = pd.DataFrame(d, columns=colNames)
+    return pd.concat([df, d], axis=1)
 
 if True:
 
@@ -400,21 +412,16 @@ if True:
             x_all[c] = lbl.transform(list(x_all[c].values))
 
     ###################### poly interaction features ######################
-    def getPoly(df):
-        dfT = df.fillna(value=0)
-        poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=True)
-        d = poly.fit_transform(dfT)
-        colNames = poly.get_feature_names(dfT.columns)
-        print("Total poly features length: {}".format(len(colNames)))
-        colNames = [str(x).replace(' ', '-') for x in colNames]
-        d = pd.DataFrame(d, columns=colNames)
-        return pd.concat([df, d], axis=1)
-    # x_all = getPoly(df=x_all)
-    # print(x_all.shape)
+    if polyOn:
+        x_all = getPoly(df=x_all)
+        print(x_all.shape)
     ###################### end poly interaction features ######################
 
     x_train = x_all[:num_train]
     x_test = x_all[num_train:]
+
+    del x_all
+    gc.collect()
 
     dtrain = xgb.DMatrix(x_train, y_train)
     dtest = xgb.DMatrix(x_test)
@@ -570,16 +577,19 @@ if hyperP.loadModel == 0:
     model = xgb.train(xgb_params, dtrain, **xgb_args)
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), 'wb'))
-    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
-                             'nfold': 5,
-                             'num_boost_round': 1000,
-                             'show_stdv': False,
-                             'verbose_eval': 50}
-    trials2 = Trials()
-    xgb_paramsT, num_boost_roundsT = optimize(trials2, xgb_params, scorecv)
-    Logger.info('Opt2 CV output:par {} rounds{}'.format(
-        xgb_paramsT, num_boost_roundsT
-    ))
+    # xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+    #                          'nfold': 5,
+    #                          'num_boost_round': 1000,
+    #                          'show_stdv': False,
+    #                          'verbose_eval': 50}
+    # trials2 = Trials()
+    # xgb_paramsT, num_boost_roundsT = optimize(trials2, xgb_params, scorecv)
+    # Logger.info('Opt2 CV output:par {} rounds{}'.format(
+    #     xgb_paramsT, num_boost_roundsT
+    # ))
+    # cv result: boost 806
+    # 2017-06-27 15:03:09,679 - INFO Opt2 CV output:par {'colsample_bytree': 0.7, 'eta': 0.05, 'eval_metric': 'rmse', 'max_depth': 5, 'objective': 'reg:linear', 'silent': 1, 'subsample': 0.7, 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 5, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}} rounds806
+
 
     # Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
     # pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
@@ -683,11 +693,18 @@ X_all = np.c_[
     df_all.select_dtypes(exclude=['object']).values,
     np.array(list(map(factorize, df_obj.iteritems()))).T
 ]
+###################### poly interaction features ######################
+if polyOn:
+    X_all = getPoly(df=X_all)
+    print(X_all.shape)
+###################### end poly interaction features ######################
+
 print(X_all.shape)
 
 X_train = X_all[:num_train]
 X_test = X_all[num_train:]
-
+del X_all
+gc.collect()
 
 # Deal with categorical values
 df_numeric = df_all.select_dtypes(exclude=['object'])
@@ -744,6 +761,11 @@ if hyperP.loadModel == 0:
     if hyperP.gpu is not None:
         xgb_params['updater'] = hyperP.gpu
 
+    Logger.info('Opt3 rounds / params / args:\n{}\n{}\n{}'.format(
+        num_boost_rounds,
+        xgb_params,
+        xgb_args
+    ))
 
     model = xgb.train(xgb_params, dtrain, **xgb_args)
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
@@ -757,7 +779,7 @@ if hyperP.loadModel == 0:
                        nfold=hyperP.nfold)
     print(cv_output)
     num_boost_roundsT = len(cv_output)
-    Logger.info('Opt2 rounds / params / args:\n{}\n{}\n{}'.format(
+    Logger.info('Opt3 CV rounds / params / args:\n{}\n{}'.format(
         num_boost_roundsT,
         xgb_params,
     ))
@@ -765,16 +787,9 @@ if hyperP.loadModel == 0:
     # trials3 = Trials()
     # xgb_params, num_boost_rounds = optimize(trials3, space, scorecv)
     # pickle.dump(trials3, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
-    xgb_args = {
-        'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-    }
-    Logger.info('Opt3 rounds / params / args:\n{}\n{}\n{}'.format(
-        num_boost_rounds,
-        xgb_params,
-        xgb_args
-    ))
 else:
     model = pickle.load(open(r'C:\repos\kaggle\Sberbank\model\2017-06-18_11-18-01.Sberbankmodel3', 'rb'))
+
 y_pred = model.predict(dtest)
 df_sub = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
 df_sub.head()
@@ -797,8 +812,8 @@ result.to_csv(os.path.join(projectDir,'subm/magicBill-same-{}.csv'.format(
 
 # APPLY PROBABILISTIC IMPROVEMENTS
 preds = result
-train = pd.read_csv('../input/train.csv')
-test = pd.read_csv('../input/test.csv')
+df_train = pd.read_csv(os.path.join(projectDir,'input/train.csv'))
+df_test = pd.read_csv(os.path.join(projectDir,'input/test.csv'))
 
 # Select investment sales from training set and generate frequency distribution
 invest = train[train.product_type == "Investment"]
@@ -854,8 +869,7 @@ newpreds.loc[newpreds.price_doc.isnull(), "price_doc"] = newpreds.price_doc_old
 newpreds.drop("price_doc_old", axis=1, inplace=True)
 newpreds.head()
 
-newpreds.to_csv(os.path.join(projectDir,'subm/magicBill-different-{}.csv'.format(
-    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')), index=False))
+newpreds.to_csv(os.path.join(projectDir,'subm/magicBill-different-{}.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
 if False:
     import pandas as pd

@@ -129,7 +129,7 @@ def getPoly(df):
     colNames = poly.get_feature_names(dfT.columns)
     print("Total poly features length: {}".format(len(colNames)))
     colNames = [str(x).replace(' ', '-') for x in colNames]
-    d = pd.DataFrame(d, columns=colNames)
+    d = pd.DataFrame(d, columns=colNames, index=df.index)
     return pd.concat([df, d], axis=1)
 
 if True:

@@ -123,13 +123,15 @@ rounder = 2  # number of places left of decimal point to zero
 
 polyOn = True
 def getPoly(df):
+    df = df.iloc[:100,:]
     dfT = df.fillna(value=0)
-    poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=True)
+    poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
     d = poly.fit_transform(dfT)
     colNames = poly.get_feature_names(dfT.columns)
     print("Total poly features length: {}".format(len(colNames)))
     colNames = [str(x).replace(' ', '-') for x in colNames]
     d = pd.DataFrame(d, columns=colNames, index=df.index)
+    d.drop([c for c in d.columns if c in df.columns], axis=1, inplace=True)
     return pd.concat([df, d], axis=1)
 
 if True:

@@ -771,18 +771,22 @@ if hyperP.loadModel == 0:
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel3'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 
     # print('best num_boost_rounds = ', len(cv_output))
-    cv_output = xgb.cv(xgb_params, dtrain,
-                       num_boost_round=20000,
-                       early_stopping_rounds=200,
-                       verbose_eval=100,
-                       show_stdv=False,
-                       nfold=hyperP.nfold)
-    print(cv_output)
-    num_boost_roundsT = len(cv_output)
-    Logger.info('Opt3 CV rounds / params / args:\n{}\n{}'.format(
-        num_boost_roundsT,
-        xgb_params,
-    ))
+    # cv_output = xgb.cv(xgb_params, dtrain,
+    #                    num_boost_round=20000,
+    #                    early_stopping_rounds=200,
+    #                    verbose_eval=100,
+    #                    show_stdv=False,
+    #                    nfold=hyperP.nfold)
+    # print(cv_output)
+    # num_boost_roundsT = len(cv_output)
+    # Logger.info('Opt3 CV rounds / params / args:\n{}\n{}'.format(
+    #     num_boost_roundsT,
+    #     xgb_params,
+    # ))
+    # cv returned this boosting 957 for below params
+    # {'eta': 0.05, 'max_depth': 5, 'subsample': 0.7, 'colsample_bytree': 0.7, 'objective': 'reg:linear',
+    #  'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+
 
     # trials3 = Trials()
     # xgb_params, num_boost_rounds = optimize(trials3, space, scorecv)
@@ -807,8 +811,7 @@ result["price_doc"] = np.exp(.78 * np.log(result.price_doc_follow) +
 result["price_doc"] = result["price_doc"] * 0.9915
 result.drop(["price_doc_louis", "price_doc_bruno", "price_doc_follow", "price_doc_gunja"], axis=1, inplace=True)
 result.head()
-result.to_csv(os.path.join(projectDir,'subm/magicBill-same-{}.csv'.format(
-    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')), index=False))
+result.to_csv(os.path.join(projectDir,'subm/magicBill-same-{}.csv'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
 # APPLY PROBABILISTIC IMPROVEMENTS
 preds = result

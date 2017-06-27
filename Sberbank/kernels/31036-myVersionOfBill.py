@@ -27,6 +27,8 @@ from utils.utils import dotdict, Logger
 import math
 import argparse
 from scipy.stats import norm
+from itertools import combinations
+from sklearn.preprocessing import PolynomialFeatures
 
 parser = argparse.ArgumentParser(description='Pattern finder - GBM')
 parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
@@ -54,40 +56,40 @@ hyperP = dotdict([
 ])
 hyperP.gpu = None if args.gpu == '0' else hyperP.gpu
 
-space = {
-    'learning_rate': 0.03,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01),
-    'max_depth': hp.choice('max_depth', np.arange(5, 7, dtype=int)),
-    'min_child_weight': hp.quniform('min_child_weight', 1, 3, 1),
-    'subsample': hp.quniform('subsample', 0.5, 0.7, 0.05),
-    'gamma': hp.quniform('gamma', 0, 0.5, 0.1),
-    'colsample_bytree': hp.quniform('colsample_bytree', 0.5, 1, 0.1),
-    # 'max_delta_step': 0,
-    # subsample = 1, #only in scikit-lean API
-    # colsample_bytree = 1,
-    # colsample_bylevel = 1,
-    # reg_alpha = 0,
-    # reg_lambda = 1
-    # 'scale_pos_weight': 1,
-    # 'base_score': xgbparams.base_score,
-    'objective': 'reg:linear',
-    'eval_metric': 'rmse',
-    # Increase this number if you have more cores. Otherwise, remove it and it will default
-    # to the maxium number.
-    # 'nthread':  None,
-    # 'booster': xgbparams.booster,
-    'tree_method': 'exact',  # xgbparams.tree_method,
-    'silent': 1,
-    'seed': 254,
-    # 'missing': None,
-    'xgbArgs': {
-        'num_boost_round': hyperP.num_boost_round,  # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
-        'early_stopping_rounds': 50,
-        'verbose_eval': 100,
-        'show_stdv': False,
-        'nfold': hyperP.nfold
-    }}
-if hyperP.gpu is not None:
-    space['updater'] = hyperP.gpu
+# space = {
+#     'learning_rate': 0.03,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01),
+#     'max_depth': hp.choice('max_depth', np.arange(5, 7, dtype=int)),
+#     'min_child_weight': hp.quniform('min_child_weight', 1, 3, 1),
+#     'subsample': hp.quniform('subsample', 0.5, 0.7, 0.05),
+#     'gamma': hp.quniform('gamma', 0, 0.5, 0.1),
+#     'colsample_bytree': hp.quniform('colsample_bytree', 0.5, 1, 0.1),
+#     # 'max_delta_step': 0,
+#     # subsample = 1, #only in scikit-lean API
+#     # colsample_bytree = 1,
+#     # colsample_bylevel = 1,
+#     # reg_alpha = 0,
+#     # reg_lambda = 1
+#     # 'scale_pos_weight': 1,
+#     # 'base_score': xgbparams.base_score,
+#     'objective': 'reg:linear',
+#     'eval_metric': 'rmse',
+#     # Increase this number if you have more cores. Otherwise, remove it and it will default
+#     # to the maxium number.
+#     # 'nthread':  None,
+#     # 'booster': xgbparams.booster,
+#     'tree_method': 'exact',  # xgbparams.tree_method,
+#     'silent': 1,
+#     'seed': 254,
+#     # 'missing': None,
+#     'xgbArgs': {
+#         'num_boost_round': hyperP.num_boost_round,  # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
+#         'early_stopping_rounds': 50,
+#         'verbose_eval': 100,
+#         'show_stdv': False,
+#         'nfold': hyperP.nfold
+#     }}
+# if hyperP.gpu is not None:
+#     space['updater'] = hyperP.gpu
 
 def scorecv(xgbparams, saveModel=False):
     # print(xgbparams)
@@ -397,6 +399,20 @@ if True:
             lbl.fit(list(x_all[c].values))
             x_all[c] = lbl.transform(list(x_all[c].values))
 
+    ###################### poly interaction features ######################
+    def getPoly(df):
+        dfT = df.fillna(value=0)
+        poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=True)
+        d = poly.fit_transform(dfT)
+        colNames = poly.get_feature_names(dfT.columns)
+        print("Total poly features length: {}".format(len(colNames)))
+        colNames = [str(x).replace(' ', '-') for x in colNames]
+        d = pd.DataFrame(d, columns=colNames)
+        return pd.concat([df, d], axis=1)
+    x_all = getPoly(df=x_all)
+    print(x_all.shape)
+    ###################### end poly interaction features ######################
+
     x_train = x_all[:num_train]
     x_test = x_all[num_train:]
 
@@ -455,20 +471,21 @@ if hyperP.loadModel == 0:
 
     model = xgb.train(xgb_params, dtrain, **xgb_args)
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel1'.format(
-
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), 'wb'))
-
-    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
-                             'nfold': 10,
-                             'num_boost_round': 1000,
-                             'show_stdv': False,
-                             'verbose_eval': 50}
-    trials1 = Trials()
+    # this cv resulted in best boosting rounds: 739
+    # 2017-06-27 12:42:23,500 - INFO Opt1 CV par: {'colsample_bytree': 1, 'eta': 0.05, 'eval_metric': 'rmse', 'max_depth': 6, 'objective': 'reg:linear', 'silent': 1, 'subsample': 0.6, 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}  numboost: 739
+    #
+    # xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+    #                          'nfold': 10,
+    #                          'num_boost_round': 1000,
+    #                          'show_stdv': False,
+    #                          'verbose_eval': 50}
+    # trials1 = Trials()
     # xgb_paramsT, num_boost_roundsT = optimize(trials1, space, scorecv)
-    xgb_paramsT, num_boost_roundsT = optimize(trials1, xgb_params, scorecv)
-    Logger.info('Opt1 CV par: {}  numboost: {}'.format(
-        xgb_paramsT, num_boost_roundsT))
-    pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    # xgb_paramsT, num_boost_roundsT = optimize(trials1, xgb_params, scorecv)
+    # Logger.info('Opt1 CV par: {}  numboost: {}'.format(
+    #     xgb_paramsT, num_boost_roundsT))
+    # pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 
 else:
     model = pickle.load(open(r'C:\repos\kaggle\Sberbank\model\2017-06-18_10-15-41.Sberbankmodel1', 'rb'))
@@ -519,7 +536,6 @@ if hyperP.loadModel == 0:
             'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
         }
     else:
-
         xgb_params = {
             'objective': 'reg:linear',
             'eval_metric': 'rmse',
@@ -549,18 +565,22 @@ if hyperP.loadModel == 0:
     Logger.info('Opt2 rounds / params / args:\n{}\n{}\n{}'.format(
         num_boost_rounds,
         xgb_params,
+        xgb_args
     ))
     model = xgb.train(xgb_params, dtrain, **xgb_args)
-
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), 'wb'))
-
+    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+                             'nfold': 5,
+                             'num_boost_round': 1000,
+                             'show_stdv': False,
+                             'verbose_eval': 50}
     trials2 = Trials()
     xgb_paramsT, num_boost_roundsT = optimize(trials2, xgb_params, scorecv)
     Logger.info('Opt2 CV output:par {} rounds{}'.format(
         xgb_paramsT, num_boost_roundsT
     ))
-    # opt2 boost rounds = 1000 gotta re-run again with more rounds
+
     # Opt2 params: {'colsample_bytree': 0.9, 'eval_metric': 'rmse', 'gamma': 0.1, 'learning_rate': 0.01, 'max_depth': 6, 'min_child_weight': 3.0, 'objective': 'reg:linear', 'seed': 254, 'silent': 1, 'subsample': 0.5, 'tree_method': 'exact', 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}
     # pickle.dump(trials2, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial2'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
 else:

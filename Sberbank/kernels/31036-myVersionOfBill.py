@@ -123,7 +123,7 @@ rounder = 2  # number of places left of decimal point to zero
 
 polyOn = True
 def getPoly(df):
-    df = df.iloc[:100,:]
+    # df = df.iloc[:100,:]
     dfT = df.fillna(value=0)
     poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
     d = poly.fit_transform(dfT)

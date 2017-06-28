@@ -742,11 +742,6 @@ X_all = np.c_[
     df_all.select_dtypes(exclude=['object']).values,
     np.array(list(map(factorize, df_obj.iteritems()))).T
 ]
-###################### poly interaction features ######################
-if polyOn:
-    X_all = getPoly(df=X_all)
-    print(X_all.shape)
-###################### end poly interaction features ######################
 
 print(X_all.shape)
 
@@ -763,7 +758,11 @@ for c in df_obj:
     df_obj[c] = pd.factorize(df_obj[c])[0]
 
 df_values = pd.concat([df_numeric, df_obj], axis=1)
-
+###################### poly interaction features ######################
+if polyOn:
+    X_all = getPoly(df=df_values)
+    print(X_all.shape)
+###################### end poly interaction features ######################
 
 # Convert to numpy values
 X_all = df_values.values

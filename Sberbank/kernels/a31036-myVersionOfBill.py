@@ -757,12 +757,13 @@ df_obj = df_all.select_dtypes(include=['object']).copy()
 for c in df_obj:
     df_obj[c] = pd.factorize(df_obj[c])[0]
 
-df_values = pd.concat([df_numeric, df_obj], axis=1)
 ###################### poly interaction features ######################
 if polyOn:
-    X_all = getPoly(df=df_values)
-    print(X_all.shape)
+    df_numeric = getPoly(df=df_numeric)
+    print(df_numeric.shape)
 ###################### end poly interaction features ######################
+
+df_values = pd.concat([df_numeric, df_obj], axis=1)
 
 # Convert to numpy values
 X_all = df_values.values

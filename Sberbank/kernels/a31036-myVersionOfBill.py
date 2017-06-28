@@ -34,7 +34,7 @@ import gc
 from functools import partial
 shorten=True
 parser = argparse.ArgumentParser(description='Pattern finder - GBM')
-parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
+parser.add_argument('-gpu', action='store', help='', default='grow_gpu_hist')
 # parser.add_argument('-gpu', action='store', help='', default='0')
 args = parser.parse_args()
 
@@ -49,11 +49,11 @@ Logger.init_log(os.path.join(projectDir, 'log/LogSberbankb-{}'.format(datetime.d
 Logger.debug('Arguments: {}'.format(args))
 
 hyperP = dotdict([
-    ('nfold', 5),
+    ('nfold', 2),
     ('max_evals', 1),
     ('num_boost_round', 20000),
     ('boostMulti', 1.00),
-    ('gpu', 'grow_gpu'),
+    ('gpu', 'grow_gpu_hist'),
     ('loadModel', 0),
     ('useKaggleParam', 1),
     ('polyFeat', 10000)
@@ -528,7 +528,7 @@ if hyperP.loadModel == 0:
     # 2017-06-27 12:42:23,500 - INFO Opt1 CV par: {'colsample_bytree': 1, 'eta': 0.05, 'eval_metric': 'rmse', 'max_depth': 6, 'objective': 'reg:linear', 'silent': 1, 'subsample': 0.6, 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}  numboost: 739
     #
     xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
-                             'nfold': 5,
+                             'nfold': hyperP.nfold,
                              'num_boost_round': 1000,
                              'verbose_eval': 50}
     trials1 = Trials()
@@ -617,7 +617,7 @@ if hyperP.loadModel == 0:
     ))
 
     xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
-                             'nfold': 5,
+                             'nfold': hyperP.nfold,
                              'num_boost_round': 1000,
                              'verbose_eval': 50}
     trials2 = Trials()
@@ -633,7 +633,7 @@ if hyperP.loadModel == 0:
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), 'wb'))
     # xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
-    #                          'nfold': 5,
+    #                          'nfold': hyperP.nfold,
     #                          'num_boost_round': 1000,
     #                          'show_stdv': False,
     #                          'verbose_eval': 50}
@@ -817,7 +817,7 @@ if hyperP.loadModel == 0:
     ))
 
     xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
-                             'nfold': 5,
+                             'nfold': hyperP.nfold,
                              'num_boost_round': 1000,
                              'verbose_eval': 50}
     trials3 = Trials()

@@ -32,7 +32,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import StratifiedKFold
 import gc
 from functools import partial
-shorten=False
+shorten=True
 parser = argparse.ArgumentParser(description='Pattern finder - GBM')
 parser.add_argument('-gpu', action='store', help='', default='grow_gpu')
 # parser.add_argument('-gpu', action='store', help='', default='0')
@@ -50,13 +50,13 @@ Logger.debug('Arguments: {}'.format(args))
 
 hyperP = dotdict([
     ('nfold', 5),
-    ('max_evals', 15),
+    ('max_evals', 1),
     ('num_boost_round', 20000),
     ('boostMulti', 1.00),
     ('gpu', 'grow_gpu'),
     ('loadModel', 0),
     ('useKaggleParam', 1),
-    ('polyFeat', 3000)
+    ('polyFeat', 10000)
 ])
 hyperP.gpu = None if args.gpu == '0' else hyperP.gpu
 
@@ -506,7 +506,7 @@ if hyperP.loadModel == 0:
                       'silent': 1,
                       'subsample': 0.6,
                       'tree_method': 'exact',
-                      'xgbArgs': {'early_stopping_rounds': 100,
+                      'xgbArgs': {'early_stopping_rounds': 50,
                                   'nfold': 10,
                                   'num_boost_round': 1000,
                                   'verbose_eval': 50}}
@@ -527,7 +527,7 @@ if hyperP.loadModel == 0:
     # this cv resulted in best boosting rounds: 739
     # 2017-06-27 12:42:23,500 - INFO Opt1 CV par: {'colsample_bytree': 1, 'eta': 0.05, 'eval_metric': 'rmse', 'max_depth': 6, 'objective': 'reg:linear', 'silent': 1, 'subsample': 0.6, 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}  numboost: 739
     #
-    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+    xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
                              'nfold': 5,
                              'num_boost_round': 1000,
                              'verbose_eval': 50}
@@ -616,7 +616,7 @@ if hyperP.loadModel == 0:
         xgb_args
     ))
 
-    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+    xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
                              'nfold': 5,
                              'num_boost_round': 1000,
                              'verbose_eval': 50}
@@ -632,7 +632,7 @@ if hyperP.loadModel == 0:
 
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), 'wb'))
-    # xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+    # xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
     #                          'nfold': 5,
     #                          'num_boost_round': 1000,
     #                          'show_stdv': False,
@@ -816,7 +816,7 @@ if hyperP.loadModel == 0:
         xgb_args
     ))
 
-    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+    xgb_params['xgbArgs'] = {'early_stopping_rounds': 50,
                              'nfold': 5,
                              'num_boost_round': 1000,
                              'verbose_eval': 50}

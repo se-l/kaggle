@@ -758,9 +758,9 @@ for c in df_obj:
     df_obj[c] = pd.factorize(df_obj[c])[0]
 
 ###################### poly interaction features ######################
-if polyOn:
-    df_numeric = getPoly(df=df_numeric)
-    print(df_numeric.shape)
+# if polyOn:
+#     df_numeric = getPoly(df=df_numeric)
+#     print(df_numeric.shape)
 ###################### end poly interaction features ######################
 
 df_values = pd.concat([df_numeric, df_obj], axis=1)

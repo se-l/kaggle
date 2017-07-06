@@ -1,0 +1,36 @@
+https://www.kaggle.com/eaturner/stacking-em-up/notebook
+
+https://www.kaggle.com/frednavruzov/baseline-to-start-with-keras-lb-0-55/notebook
+
+https://www.kaggle.com/ug2409/a-strategy-for-feature-engine
+
+fred using xgboost, not deep learning - useful commments:
+https://www.kaggle.com/frednavruzov/baselines-to-start-with-lb-0-56
+
+Neil NN approach: has some new feat eng
+https://www.kaggle.com/neilslab/neural-model-output-probabilities
+
+anokas start of comp:
+https://www.kaggle.com/anokas/mercedes-eda-xgboost-starter-0-55
+
+vinay combining a lot of estimators
+https://www.kaggle.com/vsesham/cut-the-time
+
+liam deep NN
+https://www.kaggle.com/liampetti/deep-neural-network-using-tensorflow/code
+
+tilii   some TSNE scoring. clusters. stack with it:
+https://www.kaggle.com/tilii7/four-blob-tsne-with-legal-supplements/
+
+TPOT Regressor
+https://www.kaggle.com/sheriytm/feature-based-starter-tpot-lb0-559
+
+just for investigation:
+https://www.kaggle.com/msp48731/feature-engineering-and-visualization
+https://www.kaggle.com/headsortails/mercedas-2-feature-interactions
+
+tilli outlier detection:
+https://www.kaggle.com/tilii7/you-want-outliers-we-got-them-outliers/code
+
+another exploration nb:
+https://www.kaggle.com/sudalairajkumar/simple-exploration-notebook-mercedes

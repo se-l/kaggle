@@ -281,7 +281,7 @@ def run():
         y_train = y
 
         xgbMTrain = xgb.DMatrix(x_train, label=y_train, feature_names=x_train.columns)
-        xgbMTest = xgb.DMatrix(testxgb, feature_names=test.columns)
+        xgbMTest = xgb.DMatrix(testxgb, feature_names=testxgb.columns)
         # if params.runXgbCV:  # run a CV
         #     xgbMValid = xgb.DMatrix(x_valid, label=y_valid, feature_names=x_valid.columns)
         #     # specify validations set to watch performance

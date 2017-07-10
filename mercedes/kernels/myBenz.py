@@ -194,7 +194,7 @@ def run():
 
         '''1. XGB Model & predict'''
         xgbSpace = {
-            'learning_rate': 1,#0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
+            'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
             # A problem with max_depth casted to float instead of int with
             # the hp.quniform method.
             'max_depth': 4,  # hp.choice('max_depth', np.arange(3, 10, dtype=int)),
@@ -217,7 +217,7 @@ def run():
             'seed': seedRound,
             # 'missing': None,
             'xgbArgs': {
-                'num_boost_round': 1,#1250,
+                'num_boost_round': 1250,
                 # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
                 'verbose_eval': 50,
             }}
@@ -355,7 +355,7 @@ def run():
                 y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
 
             lgbSpace = {
-                'learning_rate': 1,  # 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
+                'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
                 'max_depth': 4,  # hp.choice('max_depth', np.arange(3, 10, dtype=int)),
                 'subsample': 0.93,  # hp.quniform('subsample', 0.5, 1, 0.1),
                 'n_trees': 520,

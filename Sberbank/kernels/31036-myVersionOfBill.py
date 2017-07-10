@@ -29,6 +29,7 @@ import argparse
 from scipy.stats import norm
 from itertools import combinations
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import StratifiedKFold
 import gc
 
 parser = argparse.ArgumentParser(description='Pattern finder - GBM')
@@ -92,16 +93,53 @@ hyperP.gpu = None if args.gpu == '0' else hyperP.gpu
 # if hyperP.gpu is not None:
 #     space['updater'] = hyperP.gpu
 
-def scorecv(xgbparams, saveModel=False):
+def scorecvbackup(xgbparams, saveModel=False):
     # print(xgbparams)
     xgbArgs = xgbparams['xgbArgs']
     del xgbparams['xgbArgs']
+
     cvresult = xgb.cv(xgbparams, dtrain, **xgbArgs)
 
     return {'loss': cvresult.iloc[-1, 0], 'status': STATUS_OK, 'bestIter': len(cvresult)}
     # cv_output[['train-rmse-mean', 'test-rmse-mean']].plot()
     # print('best num_boost_rounds = ', len(cv_output))
     # num_boost_rounds = len(cv_output)
+def scorecv(xgbparams, saveModel=False):
+    # print(xgbparams)
+    xgbArgs = xgbparams['xgbArgs']
+    del xgbparams['xgbArgs']
+
+    bestIterL = []
+    bestScoreL = []
+    skf = StratifiedKFold(n_splits=xgbArgs.nfold, random_state=234)
+    del xgbArgs['nfold']
+    for train_index, test_index in skf.split(x_train, y_train):
+        x_trainF, x_testF = x_train.iloc[train_index, :], x_train.iloc[test_index, :]
+        y_trainF, y_testF = y_train.iloc[train_index], y_train.iloc[test_index]
+
+        xgbMTrain = xgb.DMatrix(x_trainF, label=y_trainF)#, feature_names=feature_names)
+        xgbMTest = xgb.DMatrix(y_trainF, label=y_testF)#, feature_names=feature_names)
+
+        watchlist = [(xgbMTrain, 'train'), (xgbMTest, 'val')]
+        # Logger.info('Train Matrix row / col: {} - {}'.format(xgbMTrain.num_row, xgbMTrain.num_col))
+        ############    TRAIN   ############################
+        model = xgb.train(xgbparams, xgbMTrain,
+                          **xgbArgs,
+                          evals=watchlist
+                          )
+        bestIterL.append(model.best_iteration)
+        bestScoreL.append(model.best_score)
+
+    return {'loss': sum(bestScoreL) / len(bestScoreL),
+            'status': STATUS_OK,
+            'bestIter': sum(bestIterL) / len(bestIterL),
+            }
+    # return {'loss': cvresult.iloc[-1, 0], 'status': STATUS_OK, 'bestIter': len(cvresult)}
+
+
+# cv_output[['train-rmse-mean', 'test-rmse-mean']].plot()
+# print('best num_boost_rounds = ', len(cv_output))
+# num_boost_rounds = len(cv_output)
 
 def optimize(trials, space, scoreFunc):
 
@@ -464,7 +502,6 @@ if hyperP.loadModel == 0:
                       'xgbArgs': {'early_stopping_rounds': 100,
                                   'nfold': 10,
                                   'num_boost_round': 1000,
-                                  'show_stdv': False,
                                   'verbose_eval': 50}}
         xgb_args = {
             'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
@@ -486,7 +523,6 @@ if hyperP.loadModel == 0:
     xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
                              'nfold': 5,
                              'num_boost_round': 1000,
-                             'show_stdv': False,
                              'verbose_eval': 50}
     trials1 = Trials()
     # xgb_paramsT, num_boost_roundsT = optimize(trials1, space, scorecv)
@@ -567,24 +603,34 @@ if hyperP.loadModel == 0:
     if hyperP.gpu is not None:
         xgb_params['updater'] = hyperP.gpu
 
-    cv_output = xgb.cv(xgb_params, dtrain,
-                       num_boost_round=20000,
-                       early_stopping_rounds=100,
-                       verbose_eval=100,
-                       show_stdv=False,
-                       nfold=hyperP.nfold,
-                       )
-
-    num_boost_rounds= len(cv_output) # 382
-    xgb_args = {
-        'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
-    }
-    # num_boost_rounds = 385  # This was the CV output, as earlier version shows
     Logger.info('Opt2 rounds / params / args:\n{}\n{}\n{}'.format(
         num_boost_rounds,
         xgb_params,
         xgb_args
     ))
+
+    xgb_params['xgbArgs'] = {'early_stopping_rounds': 100,
+                             'nfold': 5,
+                             'num_boost_round': 1000,
+                             'verbose_eval': 50}
+    trials2 = Trials()
+    # xgb_paramsT, num_boost_roundsT = optimize(trials1, space, scorecv)
+    xgb_params, num_boost_rounds = optimize(trials2, xgb_params, scorecv)
+    Logger.info('Opt2 CV par: {}  numboost: {}'.format(
+        xgb_params, num_boost_rounds))
+    # pickle.dump(trials1, open(os.path.join(projectDir, 'hyperOptTrials/{}.Sberbanktrial1'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))),'wb'))
+    xgb_args = {
+        'num_boost_round': math.ceil(num_boost_rounds * hyperP.boostMulti),
+    }
+    model = xgb.train(xgb_params, dtrain, **xgb_args)
+
+    # cv_output = xgb.cv(xgb_params, dtrain,
+    #                    num_boost_round=20000,
+    #                    early_stopping_rounds=100,
+    #                    verbose_eval=100,
+    #                    show_stdv=False,
+    #                    nfold=hyperP.nfold,
+    #                    )
 
     model = xgb.train(xgb_params, dtrain, **xgb_args)
     pickle.dump(model, open(os.path.join(projectDir, 'model/{}.Sberbankmodel2'.format(

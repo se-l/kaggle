@@ -1,0 +1,7 @@
+2017-06-28 09:45:37,668 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 09:46:14,817 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+

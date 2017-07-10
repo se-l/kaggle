@@ -1,0 +1,9 @@
+2017-06-27 09:05:26,448 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 09:05:30,071 - INFO Opt1 rounds / params / args:
+422
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 422}
+
+2017-06-27 12:42:23,500 - INFO Opt1 CV par: {'colsample_bytree': 1, 'eta': 0.05, 'eval_metric': 'rmse', 'max_depth': 6, 'objective': 'reg:linear', 'silent': 1, 'subsample': 0.6, 'updater': 'grow_gpu', 'xgbArgs': {'early_stopping_rounds': 100, 'nfold': 10, 'num_boost_round': 1000, 'show_stdv': False, 'verbose_eval': 50}}  numboost: 739
+

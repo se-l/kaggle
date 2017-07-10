@@ -1,0 +1,14 @@
+2017-06-20 16:40:35,860 - INFO Tick Input shape: (3822194, 5)
+
+2017-06-20 16:40:51,923 - INFO Tick Input shape: (3822194, 5)
+
+2017-06-20 16:41:46,387 - INFO Input shape post talibs: (314223, 276)
+
+2017-06-20 16:41:47,175 - INFO FEAT IMP FILTER - Input shape: (314223, 101)
+
+2017-06-20 16:41:47,324 - INFO subtractClose: (314223, 2)
+
+2017-06-20 16:43:51,060 - INFO Input shape post boolIndicators: (314223, 5253)
+
+2017-06-20 16:47:28,420 - INFO Input shape post feature engineering: (313820, 4169)
+

@@ -1,0 +1,107 @@
+2017-06-28 00:14:13,068 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 00:20:10,081 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 00:29:44,856 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 00:30:00,575 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 00:37:49,917 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 00:37:57,857 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:14:50,194 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:14:55,881 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:20:33,794 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:20:39,121 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:21:01,092 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:21:06,471 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:22:01,968 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:22:08,238 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:23:12,597 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:23:18,023 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:26:13,642 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:27:09,211 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:29:47,132 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 17:30:31,300 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 17:30:59,088 - DEBUG Arguments: Namespace(gpu='0')
+
+2017-06-28 17:31:34,186 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1}
+{'num_boost_round': 739}
+
+2017-06-28 17:34:22,814 - DEBUG Arguments: Namespace(gpu='0')
+
+2017-06-28 17:34:57,814 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1}
+{'num_boost_round': 739}
+
+2017-06-28 17:37:05,894 - DEBUG Arguments: Namespace(gpu='0')
+
+2017-06-28 17:37:40,710 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1}
+{'num_boost_round': 739}
+
+2017-06-28 20:35:35,902 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-28 20:36:10,480 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 739}
+
+2017-06-28 20:36:34,157 - DEBUG Arguments: Namespace(gpu='0')
+
+2017-06-28 20:36:56,226 - INFO Opt1 rounds / params / args:
+739
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1}
+{'num_boost_round': 739}
+
+2017-06-28 20:37:18,481 - INFO Opt1 CV par: {'colsample_bytree': 1, 'eta': 0.05, 'eval_metric': 'rmse', 'max_depth': 6, 'objective': 'reg:linear', 'silent': 1, 'subsample': 0.6, 'xgbArgs': {'early_stopping_rounds': 50, 'nfold': 5, 'num_boost_round': 1000, 'verbose_eval': 50}}  numboost: 29.6
+result: {'loss': 1718100.1046876, 'status': 'ok', 'bestIter': 29.6}
+
+2017-06-28 20:37:29,738 - INFO Opt2 rounds / params / args:
+806
+{'eta': 0.05, 'max_depth': 5, 'subsample': 0.7, 'colsample_bytree': 0.7, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1}
+{'num_boost_round': 806}
+

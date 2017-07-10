@@ -1,0 +1,26 @@
+2017-06-27 16:57:23,128 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 16:57:33,352 - INFO Opt1 rounds / params / args:
+422
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1, 'updater': 'grow_gpu'}
+{'num_boost_round': 422}
+
+2017-06-27 17:01:42,903 - DEBUG Arguments: Namespace(gpu='0')
+
+2017-06-27 17:01:52,682 - INFO Opt1 rounds / params / args:
+422
+{'eta': 0.05, 'max_depth': 6, 'subsample': 0.6, 'colsample_bytree': 1, 'objective': 'reg:linear', 'eval_metric': 'rmse', 'silent': 1}
+{'num_boost_round': 422}
+
+2017-06-27 17:59:17,524 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 18:02:55,115 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 18:11:50,943 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 18:14:07,320 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 18:27:03,416 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+
+2017-06-27 18:43:27,299 - DEBUG Arguments: Namespace(gpu='grow_gpu')
+

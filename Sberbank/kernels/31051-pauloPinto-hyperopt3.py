@@ -706,4 +706,23 @@ result.to_csv(os.path.join(projectDir,'subm/silly-{}.csv'.format(
     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
 if False:
-    a=1
+    import pandas as pd
+    import numpy as np
+    #merge subs on id
+    sub1 = pd.read_csv(r'C:\repos\kaggle\Sberbank\subm\0.31038-different_result.csv')
+    sub1 = sub1.set_index('id')
+    sub1 = sub1.rename(columns={'price_doc': 'sub1'})
+    # sub2 = pd.read_csv(r'C:\repos\kaggle\Sberbank\subm\0.31091-sub-silly.csv')
+    sub2 = pd.read_csv(r'C:\repos\kaggle\Sberbank\subm\0.31039-different_result.csv')
+    sub2 = sub2.set_index('id')
+    sub2 = sub2.rename(columns={'price_doc': 'sub2'})
+    subM = pd.concat([sub1,sub2], axis=1)
+    # subM['f'] = np.exp( 0.66*np.log(subM.loc[:,'sub1']) +
+    #                     0.34*np.log(subM.loc[:,'sub2']) )
+    subM['f'] = np.exp(0.5 * np.log(subM.loc[:, 'sub1']) +
+                       0.5 * np.log(subM.loc[:, 'sub2']))
+    subM.drop(['sub1','sub2'],axis=1,inplace=True)
+    subM = subM.rename(columns={'f': 'price_doc'})
+    subM['id']=subM.index
+    subM.to_csv(os.path.join(projectDir, 'subm/merge2-{}.csv'.format(
+        datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)

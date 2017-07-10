@@ -1,0 +1,9 @@
+owl notebook score 58174 from laptop(win)
+R2 score on train data:
+0.658453047917 on train data
+
+r2_score(train['y'], y)   after outliers were removed from train
+Out[202]: 0.6019130228025189
+
+just with the removal of 250sm r2_score becomes
+0.6008235313039465

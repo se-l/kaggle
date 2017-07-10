@@ -260,53 +260,53 @@ def run():
         #replace this with a 5-fold CV if parameters are better known and all is tested for long runs
         X = train.drop(['ID','y'], axis=1)#.values
         y = train['y']#.values
-        test = test[train.drop('y', axis=1).columns]
-        test = test.drop('ID', axis=1)
+        testxgb = test[train.drop('y', axis=1).columns]
+        testxgb = testxgb.drop('ID', axis=1)
 
         ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=params.seedRounds)
         xgbPredsTest = []
         xgbPredsTrain = []
 
-        if params.runXgbCV:
-            kFold = KFold(n_splits=params.kfold, shuffle=True, random_state=seedRound)
-            i=0
-            for train_index, test_index in kFold.split(X):
+        # if params.runXgbCV:
+        #     kFold = KFold(n_splits=params.kfold, shuffle=True, random_state=seedRound)
+        #     i=0
+        #     for train_index, test_index in kFold.split(X):
+        #
+        #     # for train_index, test_index in ss.split(X):
+        #         print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
+        #         x_train, x_valid = X.iloc[train_index,:], X.iloc[test_index,:]
+        #         y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
+        # else:
+        x_train = X
+        y_train = y
 
-            # for train_index, test_index in ss.split(X):
-                print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
-                x_train, x_valid = X.iloc[train_index,:], X.iloc[test_index,:]
-                y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
-        else:
-            x_train = X
-            y_train = y
+        xgbMTrain = xgb.DMatrix(x_train, label=y_train, feature_names=x_train.columns)
+        xgbMTest = xgb.DMatrix(testxgb, feature_names=test.columns)
+        # if params.runXgbCV:  # run a CV
+        #     xgbMValid = xgb.DMatrix(x_valid, label=y_valid, feature_names=x_valid.columns)
+        #     # specify validations set to watch performance
+        #     xgbSpace['xgbArgs']['evals'] = [(xgbMTrain, 'train'), (xgbMValid, 'val')]
+        #     xgbSpace['xgbArgs']['evals_result'] = {}
+        #     xgbSpace['xgbArgs']['early_stopping_rounds'] = 50
 
-            xgbMTrain = xgb.DMatrix(x_train, label=y_train, feature_names=x_train.columns)
-            xgbMTest = xgb.DMatrix(test, feature_names=test.columns)
-            if params.runXgbCV:  # run a CV
-                xgbMValid = xgb.DMatrix(x_valid, label=y_valid, feature_names=x_valid.columns)
-                # specify validations set to watch performance
-                xgbSpace['xgbArgs']['evals'] = [(xgbMTrain, 'train'), (xgbMValid, 'val')]
-                xgbSpace['xgbArgs']['evals_result'] = {}
-                xgbSpace['xgbArgs']['early_stopping_rounds'] = 50
+        xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
+        paramsx = params
+        # paramsx['max_evals']=1
+        best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=paramsx)
+        xgbmodel = hyperOptTrials.best_trial['result']['model']
+        # pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
+        #            batch=params.batch)
+        # Logger.info('Fold: {} - best hyperopt params: {}'.format( best_params))
 
-            xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
-            paramsx = params
-            paramsx['max_evals']=1
-            best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=paramsx)
-            xgbmodel = hyperOptTrials.best_trial['result']['model']
-            # pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
-            #            batch=params.batch)
-            # Logger.info('Fold: {} - best hyperopt params: {}'.format( best_params))
+        # if params.runXgbCV:
+        #     bestIter = hyperOptTrials.best_trial['result']['bestIter']
+        #     Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
+        #     Logger.info('XGB CV bestIter: {}'.format(hyperOptTrials.best_trial['result']['bestIter']))
 
-            if params.runXgbCV:
-                bestIter = hyperOptTrials.best_trial['result']['bestIter']
-                Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
-                Logger.info('XGB CV bestIter: {}'.format(hyperOptTrials.best_trial['result']['bestIter']))
-
-            xgbPredsTest.append( xgbmodel.predict(xgbMTest) )
-            xgbPredsTrain.append( xgbmodel.predict(xgbMTrain) )
-            r2Train = r2_score(y_train, xgbPredsTrain[-1])
-            Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, 0))
+        xgbPredsTest.append( xgbmodel.predict(xgbMTest) )
+        xgbPredsTrain.append( xgbmodel.predict(xgbMTrain) )
+        r2Train = r2_score(y_train, xgbPredsTrain[-1])
+        Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, 0))
 
         # pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
         #            batch=0)

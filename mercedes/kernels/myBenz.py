@@ -189,17 +189,18 @@ def run():
         #hyperopt wrapper to optimize each model separately on 5 fold local CV results, finally use only 1 space setting
 
     #SEED WRAPPER
+
+
+    '''5. Group median and perhaps other simple statistical methods'''
+    test_y_id = mbz.predWithX0(train, df=test, how='mean')
+    train_y_id = mbz.predWithX0(train, df=train.copy(), how='mean')
+    test_y_id.columns = ['ID','Y_X0']
+    train_y_id.columns = ['ID', 'Y_X0']
+    test = test.merge(test_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
+    train = train.merge(train_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
+
     for seedRound in range(0, params.seedRounds):
         np.random.seed(seedRound)
-
-        '''5. Group median and perhaps other simple statistical methods'''
-        test_y_id = mbz.predWithX0(train, df=test, how='mean')
-        train_y_id = mbz.predWithX0(train, df=train.copy(), how='mean')
-        test_y_id.columns = ['ID','Y_X0']
-        train_y_id.columns = ['ID', 'Y_X0']
-        test = test.merge(test_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
-        train = train.merge(train_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
-
         '''1. XGB Model & predict'''
         # best_p= {
         # 'n_trees': [500, 600, 650, 650, 600, 700],

@@ -21,8 +21,8 @@ import getpass
 import datetime
 from utils.utils import dotdict, Logger
 from utils.utilFunc import getProjectDir
-import funcBenz as fbz
-import modelsBenz as mbz
+from mercedes.kernels import funcBenz as fbz
+from mercedes.kernels import modelsBenz as mbz
 from utils.utilFunc import pickleAway
 
 def run():

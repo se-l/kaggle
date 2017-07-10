@@ -335,11 +335,11 @@ def run():
         stSpace = {
             'learning_rate': 0.0001,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
             'loss': 'huber',
-            'max_depth': 2, #hp.choice('max_depth', np.arange(2, 5, dtype=int)), #3,
-            'max_features': 0.60, #hp.quniform('max_features', 0.4, 0.7, 0.05), # 0.55,
+            'max_depth': 3, #hp.choice('max_depth', np.arange(2, 5, dtype=int)), #3,
+            'max_features': 0.55, #hp.quniform('max_features', 0.4, 0.7, 0.05), # 0.55,
             'min_samples_leaf': 18, # hp.choice('min_samples_leaf', np.arange(10, 26, 2)), #18
             'min_samples_split': 14, #hp.choice('min_samples_split', np.arange(8, 20, 2)), #14,
-            'subsample': 0.75# hp.quniform('subsample', 0.6, 0.9, 0.01), #0.7
+            'subsample': 0.7# hp.quniform('subsample', 0.6, 0.9, 0.01), #0.7
         }
 
         def stackedPred(stSpace, stack_trainset, stack_y_train):

@@ -48,7 +48,7 @@ def run():
         ('readOL', False),
         ('seedRounds', 1),
         ('kfold', 1),
-        ('max_evals', 100),
+        ('max_evals', 1),
 
         ('saveXgbModel', 1),
         ('saveXgbFeatImp', 1),
@@ -352,7 +352,7 @@ def run():
                 }
 
         print(params)
-        params['max_evals']=100
+        params['max_evals']=1
         stHyperOptTrials = Trials()
         stackFunc = partial(stackedPred, stack_trainset=stack_trainset, stack_y_train=stack_y_train)
         best_params = mbz.optimize(space=stSpace, scoreF=stackFunc, trials=stHyperOptTrials, params=params)

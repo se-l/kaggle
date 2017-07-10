@@ -418,7 +418,7 @@ def run():
     from tpot import TPOTRegressor
     test_ids = test['ID']
     train = train.drop('ID', axis=1)
-    auto_classifier = TPOTRegressor(generations=30, population_size=15, verbosity=2)
+    auto_classifier = TPOTRegressor(generations=3, population_size=5, verbosity=2)
     from sklearn.model_selection import train_test_split
 
     X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],
@@ -533,17 +533,26 @@ def run():
 
 
     # ENSMBLE for each model
-    xgbsub = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
-    stack = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
-    tpot = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
+    if False:
+        bestSub = pd.read_csv(os.path.join(projectDir, r'subm/58174-stacked-models-2017-07-07_14-14-22.csv'))#, index=False)
+        xgbsub = pd.read_csv(os.path.join(projectDir, r'subm/final/myBenzTestirstxgbModel-2017-07-10_22-14-18.csv'))#, index=False)
+        stack = pd.read_csv(os.path.join(projectDir, r'subm/final/myBenzTestStackerModel-2017-07-10_22-14-50.csv'))#, index=False)
+        tpot = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
 
-    sub['y'] += xgb * 0.75 + stack * 0.25
+        sub = pd.DataFrame()
+        sub['y'] = (xgbsub['y'] * 0.75 + stack['y'] * 0.25)
+        sub['ID'] = xgbsub['ID']
 
-    if params.leaksIntoSub:
+        sub['y'] = (xgbsub['y'] * 0.30 + bestSub['y'] * 0.7)
+
+
         sub = fbz.leaksIntoSub(sub)
+        xgbsub2 = fbz.leaksIntoSub(xgbsub)
 
-    sub.to_csv(os.path.join(projectDir,r'subm/myBenz-{}.csv'.format(
-                datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+        sub.to_csv(os.path.join(projectDir,r'subm/myBenzFinal73-{}.csv'.format(
+                    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+        xgbsub2.to_csv(os.path.join(projectDir,r'subm/myBenzFinalxgbOnly-{}.csv'.format(
+                    datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
 if __name__ == '__main__':
     run()

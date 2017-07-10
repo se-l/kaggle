@@ -45,9 +45,10 @@ def run():
         ('addX0groups', True),
         ('polyFeat', False),
         ('runXgbCV', False),
+        ('readOL', False),
         ('seedRounds', 1),
         ('kfold', 1),
-        ('max_evals', 1),
+        ('max_evals', 100),
 
         ('saveXgbModel', 1),
         ('saveXgbFeatImp', 1),
@@ -146,7 +147,11 @@ def run():
         train.insert(0, 'ID', train_ids)
         train.insert(0, 'y', y_train)
         test.insert(0, 'ID', test_ids)
-        train_OL = fbz.findOutliers(train.copy(), train_data, train_ids, test.copy(), test_data, target=y_train)
+        if params.readOL:
+            train_OL = pd.read_csv(os.path.join(projectDir, 'model/train-outliers.csv'))
+        else:
+            train_OL = fbz.findOutliers(train.copy(), train_data, train_ids, test.copy(), test_data, target=y_train)
+
         # train.drop(['isof', 'outlier_score'], axis=1, inplace=True)
         # test.drop(['isof'], axis=1, inplace=True)
         train = fbz.rmOutliers(train, train_OL)
@@ -196,17 +201,38 @@ def run():
         train = train.merge(train_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
 
         '''1. XGB Model & predict'''
+        # best_p= {
+        # 'n_trees': [500, 600, 650, 650, 600, 700],
+        # 'colsample_bytree': [0.9, 0.9, 0.86, 0.98, 0.94],
+        # 'colsample_bylevel': [0.8, 0.96, 1, 0.92, 1],
+        # 'min_child_weight': [2, 3, 1, 3, 1],
+        # 'max_depth': 3,
+        # 'gamma': [0, 0.18, 0.02, 0.14, 0.18],
+        # 'subsample': [1,0.9,0.96,0.88,1],
+        # 'iter': [1175, 869, 932, 839, 1527],
+        # 'iter2': [962, 1082, 744, 1358, 835, 938, 999, 965, 870, 1017]
+        # }
+        # for k, v in best_p.items():
+        #     print(np.mean(v))
+        # 616.666666667
+        # 0.916
+        # 0.936
+        # 2.0
+        # 3.0
+        # 0.104
+        # 0.948
+
         xgbSpace = {
             'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
             # A problem with max_depth casted to float instead of int with
             # the hp.quniform method.
             'max_depth': 3, #hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
             'min_child_weight': 2,#hp.quniform('min_child_weight', 1, 6, 1),
-            'subsample': 0.94, #hp.quniform('subsample', 0.9, 1, 0.02), #
-            'n_trees': 520,
+            'subsample': 0.95, #hp.quniform('subsample', 0.9, 1, 0.02), #
+            'n_trees': 620,
             'gamma': 0.1, #hp.quniform('gamma', 0, 0.2, 0.02),
-            'colsample_bytree': 0.98, # hp.quniform('colsample_bytree', 0.8, 1, 0.02),
-            'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
+            'colsample_bytree': 0.92, # hp.quniform('colsample_bytree', 0.8, 1, 0.02),
+            'colsample_bylevel': 0.94, #hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
             # 'max_delta_step': xgbparams.max_delta_step,  # 0,
             # colsample_bylevel = 1,
             # reg_alpha = 0,
@@ -221,7 +247,7 @@ def run():
             'seed': seedRound,
             # 'missing': None,
             'xgbArgs': {
-                'num_boost_round': 745,
+                'num_boost_round': 977,#745,
                 # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
                 'verbose_eval': 50,
             }}
@@ -237,14 +263,14 @@ def run():
         test = test.drop('ID', axis=1)
 
         ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=params.seedRounds)
+        xgbPredsTest = []
+        xgbPredsTrain = []
 
         if params.runXgbCV:
             kFold = KFold(n_splits=params.kfold, shuffle=True, random_state=seedRound)
-            xgbPredsTest=[]
-            xgbPredsTrain=[]
             i=0
             for train_index, test_index in kFold.split(X):
-                i += 1
+
             # for train_index, test_index in ss.split(X):
                 print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
                 x_train, x_valid = X.iloc[train_index,:], X.iloc[test_index,:]
@@ -265,9 +291,9 @@ def run():
             xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
             best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
             xgbmodel = hyperOptTrials.best_trial['result']['model']
-            pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
-                       batch=params.batch)
-            Logger.info('Fold: {} - best hyperopt params: {}'.format(i, best_params))
+            # pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
+            #            batch=params.batch)
+            # Logger.info('Fold: {} - best hyperopt params: {}'.format( best_params))
 
             if params.runXgbCV:
                 bestIter = hyperOptTrials.best_trial['result']['bestIter']
@@ -289,38 +315,72 @@ def run():
         subTrain['y'] = xgbPredTrain
         subTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestirstxgbModel-{}.csv'.format(
             datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
-        subTrain.to_csv(os.path.join(projectDir, r'subm/myBenzTrainFirstxgbModel-{}.csv'.format(
-            datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+        # subTrain.to_csv(os.path.join(projectDir, r'subm/myBenzTrainFirstxgbModel-{}.csv'.format(
+        #     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
         #Stack its predictions
         train['y_XGB'] = xgbPredTrain
         test['y_XGB'] = xgbPredTest
 
         '''2. Train stacked models & predict the test data'''
-        stackFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
-        best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
-        xgbmodel = hyperOptTrials.best_trial['result']['model']
-        def stackedPred(stack_trainset, stack_y_train):
-            return
 
-        stacked_pipeline = make_pipeline(
-            StackingEstimator(estimator=LassoLarsCV(normalize=True)),
-            StackingEstimator(estimator=GradientBoostingRegressor(
-                learning_rate=0.001,
-                loss="huber",
-                max_depth=3,
-                max_features=0.55,
-                min_samples_leaf=18,
-                min_samples_split=14,
-                subsample=0.7)),
-            LassoLarsCV()
-        )
-        stacked_pipeline.fit(stack_trainset, stack_y_train)
-        skStackPred = stacked_pipeline.predict(stack_testset)
-        skStackPredTrain = stacked_pipeline.predict(stack_trainset)
-        Logger.info('Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train,skStackPredTrain)))
+        stSpace = {
+            'learning_rate': 0.0001,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
+            'loss': 'huber',
+            'max_depth': hp.choice('max_depth', np.arange(2, 5, dtype=int)), #3,
+            'max_features': hp.quniform('max_features', 0.4, 0.7, 0.05), # 0.55,
+            'min_samples_leaf': hp.choice('min_samples_leaf', np.arange(10, 26, 2)), #18
+            'min_samples_split': hp.choice('min_samples_split', np.arange(8, 20, 2)), #14,
+            'subsample': hp.quniform('subsample', 0.6, 0.9, 0.01), #0.7
+        }
+
+        def stackedPred(stSpace, stack_trainset, stack_y_train):
+            stacked_pipeline = make_pipeline(
+                StackingEstimator(estimator=LassoLarsCV(normalize=True)),
+                StackingEstimator(estimator=GradientBoostingRegressor(
+                    **stSpace)),
+                LassoLarsCV()
+            )
+            stacked_pipeline.fit(stack_trainset, stack_y_train)
+            # skStackPred = stacked_pipeline.predict(stack_testset)
+            skStackPredTrain = stacked_pipeline.predict(stack_trainset)
+            Logger.info('During optimization: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
+            return {'loss': r2_score(stack_y_train, skStackPredTrain),
+                'status': STATUS_OK,
+                'model': stacked_pipeline
+                }
+
+        stHyperOptTrials = Trials()
+        stackFunc = partial(stackedPred, stack_trainset=stack_trainset, stack_y_train=stack_y_train)
+        best_params = mbz.optimize(space=stSpace, scoreF=stackFunc, trials=stHyperOptTrials, params=params)
+        Logger.info('Best stack hyperopt params: {}'.format(best_params))
+        st_model = stHyperOptTrials.best_trial['result']['model']
+        skStackPredTrain = st_model.predict(stack_trainset)
+        skStackPredTest = st_model.predict(stack_testset)
+        Logger.info('Best Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
+
+        skStackPredTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
+            datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+
+        return 
+        # stacked_pipeline = make_pipeline(
+        #     StackingEstimator(estimator=LassoLarsCV(normalize=True)),
+        #     StackingEstimator(estimator=GradientBoostingRegressor(
+        #         learning_rate=0.001,
+        #         loss="huber",
+        #         max_depth=3,
+        #         max_features=0.55,
+        #         min_samples_leaf=18,
+        #         min_samples_split=14,
+        #         subsample=0.7)),
+        #     LassoLarsCV()
+        # )
+        # stacked_pipeline.fit(stack_trainset, stack_y_train)
+        # skStackPred = stacked_pipeline.predict(stack_testset)
+        # skStackPredTrain = stacked_pipeline.predict(stack_trainset)
+        # Logger.info('Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train,skStackPredTrain)))
 
         train['y_SK'] = skStackPredTrain
-        test['y_SK'] = skStackPred
+        test['y_SK'] = skStackPredTest
 
         '''3. Neural networks model'''
         if False:
@@ -358,7 +418,7 @@ def run():
         auto_classifier = TPOTRegressor(generations=1, population_size=1, verbosity=2)
         from sklearn.model_selection import train_test_split
 
-        X_train, X_valid, y_train, y_valid = train_test_split(train, train['y'],
+        X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],
                                                               train_size=0.75, test_size=0.25)
         auto_classifier.fit(X_train, y_train)
         # pickleAway(auto_classifier, ex='ex{}'.format(params.ex), fileNStart='tpotModel', dir1=projectDir, dir2='model',

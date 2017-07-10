@@ -289,7 +289,9 @@ def run():
                 xgbSpace['xgbArgs']['early_stopping_rounds'] = 50
 
             xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
-            best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
+            paramsx = params
+            paramsx['max_evals']=1
+            best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=paramsx)
             xgbmodel = hyperOptTrials.best_trial['result']['model']
             # pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
             #            batch=params.batch)
@@ -326,11 +328,11 @@ def run():
         stSpace = {
             'learning_rate': 0.0001,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
             'loss': 'huber',
-            'max_depth': hp.choice('max_depth', np.arange(2, 5, dtype=int)), #3,
-            'max_features': hp.quniform('max_features', 0.4, 0.7, 0.05), # 0.55,
-            'min_samples_leaf': hp.choice('min_samples_leaf', np.arange(10, 26, 2)), #18
-            'min_samples_split': hp.choice('min_samples_split', np.arange(8, 20, 2)), #14,
-            'subsample': hp.quniform('subsample', 0.6, 0.9, 0.01), #0.7
+            'max_depth': 2, #hp.choice('max_depth', np.arange(2, 5, dtype=int)), #3,
+            'max_features': 0.60, #hp.quniform('max_features', 0.4, 0.7, 0.05), # 0.55,
+            'min_samples_leaf': 18, # hp.choice('min_samples_leaf', np.arange(10, 26, 2)), #18
+            'min_samples_split': 14, #hp.choice('min_samples_split', np.arange(8, 20, 2)), #14,
+            'subsample': 0.75# hp.quniform('subsample', 0.6, 0.9, 0.01), #0.7
         }
 
         def stackedPred(stSpace, stack_trainset, stack_y_train):
@@ -349,16 +351,22 @@ def run():
                 'model': stacked_pipeline
                 }
 
+        print(params)
+        params['max_evals']=100
         stHyperOptTrials = Trials()
         stackFunc = partial(stackedPred, stack_trainset=stack_trainset, stack_y_train=stack_y_train)
         best_params = mbz.optimize(space=stSpace, scoreF=stackFunc, trials=stHyperOptTrials, params=params)
         Logger.info('Best stack hyperopt params: {}'.format(best_params))
         st_model = stHyperOptTrials.best_trial['result']['model']
+        # pickleAway(stHyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='stHyperOptTrial', dir1=projectDir,
+        #            dir2='hyperOptTrials', batch=0)
         skStackPredTrain = st_model.predict(stack_trainset)
         skStackPredTest = st_model.predict(stack_testset)
         Logger.info('Best Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
 
-        skStackPredTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
+        sub = pd.DataFrame()
+        sub['y'] = skStackPredTest
+        sub.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
             datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
         return 
@@ -424,10 +432,12 @@ def run():
         # pickleAway(auto_classifier, ex='ex{}'.format(params.ex), fileNStart='tpotModel', dir1=projectDir, dir2='model',
         #            batch=0)
         Logger.info('The cross-validation MSE: {}'.format(auto_classifier.score(X_valid, y_valid)))
-        auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
+        # auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
 
         # we need access to the pipeline to get the probabilities
         y_tpot = auto_classifier.predict(test)
+        y_train_tpot = auto_classifier.predict(train.drop('y', axis=1))
+        Logger.info('Tpot R2 on train data: {}'.format(r2_score(train['y'], y_train_tpot)))
         if True:
             sub_tpot = pd.DataFrame()
             sub_tpot['ID'] = test_ids
@@ -527,16 +537,16 @@ def run():
             sub['y'] += xgbPred*0.75 + skStackPred*0.25
 
 
-        # PREDICT with each model for each see
+    # ENSMBLE for each model
 
 
-        #Divide by number of seed runs
-        sub['y'] /= params.seedRounds + 1
+    #Divide by number of seed runs
+    sub['y'] /= params.seedRounds + 1
 
-        if params.leaksIntoSub:
-            sub = fbz.leaksIntoSub(sub)
+    if params.leaksIntoSub:
+        sub = fbz.leaksIntoSub(sub)
 
-        sub.to_csv(os.path.join(projectDir,r'subm/myBenz-{}.csv'.format(
+    sub.to_csv(os.path.join(projectDir,r'subm/myBenz-{}.csv'.format(
                 datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
 if __name__ == '__main__':

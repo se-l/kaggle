@@ -299,6 +299,8 @@ def run():
         stackFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
         best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
         xgbmodel = hyperOptTrials.best_trial['result']['model']
+        def stackedPred(stack_trainset, stack_y_train):
+            return
 
         stacked_pipeline = make_pipeline(
             StackingEstimator(estimator=LassoLarsCV(normalize=True)),

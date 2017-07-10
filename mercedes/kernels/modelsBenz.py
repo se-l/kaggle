@@ -1,9 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.model_selection import cross_val_predict
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import KFold
 from hyperopt import STATUS_OK, Trials, fmin, hp, tpe, space_eval
 import xgboost as xgb
 from utils.utilFunc import pickleAway, getProjectDir
@@ -51,14 +48,14 @@ def xgbTrain(xgbparams, xgbMTrain, params):
     model = xgb.train(xgbparams, xgbMTrain,
                       **xgbArgs,
                       )
-    if params.saveXgbModel != 0:
-        pickleAway(model,ex='ex{}'.format(params.ex) ,fileNStart='xgbModel',dir1=projectDir,dir2='model',batch=params.batch)
+    # if params.saveXgbModel != 0:
+    #     pickleAway(model,ex='ex{}'.format(params.ex) ,fileNStart='xgbModel',dir1=projectDir,dir2='model',batch=params.batch)
 
     featImp = pd.DataFrame(
         sorted(model.get_fscore().items(), key=operator.itemgetter(1), reverse=True),
         columns=['feature', 'fscore'])
     featImp['fscore'] = featImp['fscore'] / featImp['fscore'].sum()
-    Logger.info('Top 3 Feats:\n {}'.format(featImp.sort_values(by=['fscore'], ascending=False)[:3]))
+    # Logger.info('Top 3 Feats:\n {}'.format(featImp.sort_values(by=['fscore'], ascending=False)[:3]))
     if params.saveXgbFeatImp != 0:
         pickleAway(featImp,ex='ex{}'.format(params.ex),fileNStart='xgbFImp',dir1=projectDir,dir2='FImp',batch=params.batch)
 

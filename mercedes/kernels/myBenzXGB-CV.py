@@ -204,7 +204,7 @@ def run():
             'max_depth': hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
             'min_child_weight': hp.quniform('min_child_weight', 1, 6, 1),
             'subsample': hp.quniform('subsample', 0.9, 1, 0.02), #0.93,
-            # 'n_trees': 520,
+            'n_trees': 520,
             'gamma': hp.quniform('gamma', 0, 0.2, 0.02),
             'colsample_bytree': hp.quniform('colsample_bytree', 0.8, 1, 0.02),
             'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
@@ -224,7 +224,7 @@ def run():
             'xgbArgs': {
                 'num_boost_round': params.xbgnum_boost_round,
                 # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
-                'verbose_eval': 50,
+                'verbose_eval': 200,
             }}
         if args.gpu != '0':
             xgbSpace['updater'] = args.gpu
@@ -273,7 +273,7 @@ def run():
 
                 if params.runXgbCV:
                     bestIter = hyperOptTrials.best_trial['result']['bestIter']
-                    Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
+                    # Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
                     Logger.info('XGB CV bestIter: {}'.format(hyperOptTrials.best_trial['result']['bestIter']))
 
                 xgbPredsTest.append( xgbmodel.predict(xgbMTest) )
@@ -296,6 +296,8 @@ def run():
         #Stack its predictions
         train['y_XGB'] = xgbPredTrain
         test['y_XGB'] = xgbPredTest
+
+        return
 
         '''2. Train stacked models & predict the test data'''
 

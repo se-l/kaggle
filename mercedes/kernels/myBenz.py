@@ -198,6 +198,8 @@ def run():
     train_y_id.columns = ['ID', 'Y_X0']
     test = test.merge(test_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
     train = train.merge(train_y_id.loc[:, ['ID', 'Y_X0']], how='left', on='ID')
+    xgbPredsTest = []
+    xgbPredsTrain = []
 
     for seedRound in range(0, params.seedRounds):
         np.random.seed(seedRound)
@@ -245,7 +247,7 @@ def run():
             'silent': True,
             # 'booster': xgbparams.booster,
             'tree_method': 'exact',
-            'seed': seedRound,
+            'seed': seedRound*10,
             # 'missing': None,
             'xgbArgs': {
                 'num_boost_round': 977,#745,
@@ -264,8 +266,6 @@ def run():
         testxgb = testxgb.drop('ID', axis=1)
 
         ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=seedRound)
-        xgbPredsTest = []
-        xgbPredsTrain = []
 
         # if params.runXgbCV:
         #     kFold = KFold(n_splits=params.kfold, shuffle=True, random_state=seedRound)
@@ -310,8 +310,8 @@ def run():
 
         # pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
         #            batch=0)
-    xgbPredTest = np.sum(xgbPredsTest, axis=0) / ( params.kfold * ( params.seedRounds + 1))
-    xgbPredTrain = np.sum(xgbPredsTrain, axis=0) / ( params.kfold * ( params.seedRounds + 1))
+    xgbPredTest = np.sum(xgbPredsTest, axis=0) / ( params.kfold *  params.seedRounds )
+    xgbPredTrain = np.sum(xgbPredsTrain, axis=0) / ( params.kfold * params.seedRounds )
     subTrain = pd.DataFrame()
     subTest = pd.DataFrame()
     subTest['y'] = xgbPredTest
@@ -324,12 +324,12 @@ def run():
     train['y_XGB'] = xgbPredTrain
     test['y_XGB'] = xgbPredTest
 
+    stTrainPreds = []
+    stTestPreds = []
     for seedRound in range(0, params.seedRounds):
         np.random.seed(seedRound)
 
         '''2. Train stacked models & predict the test data'''
-        stTrainPreds=[]
-        stTestPreds=[]
 
         stSpace = {
             'learning_rate': 0.0001,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
@@ -369,8 +369,8 @@ def run():
         stTrainPreds.append(st_model.predict(stack_trainset))
         stTestPreds.append(st_model.predict(stack_testset))
 
-    skStackPredTest = np.sum(stTestPreds, axis=0) / (params.seedRounds + 1)
-    skStackPredTrain = np.sum(stTrainPreds, axis=0) / (params.seedRounds + 1)
+    skStackPredTest = np.sum(stTestPreds, axis=0) / params.seedRounds
+    skStackPredTrain = np.sum(stTrainPreds, axis=0) / params.seedRounds
     Logger.info('Best Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
 
     sub = pd.DataFrame()
@@ -414,8 +414,9 @@ def run():
 
     '''4. TPOT automated ML approach'''
     from tpot import TPOTRegressor
+    test_ids = test['ID']
     train = train.drop('ID', axis=1)
-    auto_classifier = TPOTRegressor(generations=1, population_size=1, verbosity=2)
+    auto_classifier = TPOTRegressor(generations=100, population_size=50, verbosity=2)
     from sklearn.model_selection import train_test_split
 
     X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],

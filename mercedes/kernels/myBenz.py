@@ -12,6 +12,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import KFold
 from sklearn.utils import check_array
 from functools import partial
 from hyperopt import STATUS_OK, Trials
@@ -24,6 +25,7 @@ from utils.utilFunc import getProjectDir
 from mercedes.kernels import funcBenz as fbz
 from mercedes.kernels import modelsBenz as mbz
 from utils.utilFunc import pickleAway
+from hyperopt import STATUS_OK, Trials, fmin, hp, tpe, space_eval
 
 def run():
 
@@ -42,9 +44,10 @@ def run():
         ('leaksIntoSub', True),
         ('addX0groups', True),
         ('polyFeat', False),
-        ('runXgbCV', False),
+        ('runXgbCV', True),
         ('seedRounds', 1),
-        ('max_evals', 1),
+        ('kfold', 2),
+        ('max_evals', 2),
 
         ('saveXgbModel', 1),
         ('saveXgbFeatImp', 1),
@@ -197,12 +200,13 @@ def run():
             'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
             # A problem with max_depth casted to float instead of int with
             # the hp.quniform method.
-            'max_depth': 4,  # hp.choice('max_depth', np.arange(3, 10, dtype=int)),
-            # 'min_child_weight': xgbparams.min_child_weight,  # hp.quniform('min_child_weight', 1, 6, 1),
-            'subsample': 0.93,  # hp.quniform('subsample', 0.5, 1, 0.1),
+            'max_depth': hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
+            'min_child_weight': hp.quniform('min_child_weight', 1, 6, 1),
+            'subsample': hp.quniform('subsample', 0.9, 1, 0.02), #0.93,
             'n_trees': 520,
-            # 'gamma': xgbparams.gamma,  # hp.quniform('gamma', 0.1, 1, 0.3),
-            # 'colsample_bytree': xgbparams.colsample_bytree,  # hp.quniform('colsample_bytree', 0.5, 0.9, 0.05),
+            'gamma': hp.quniform('gamma', 0, 0.2, 0.02),
+            'colsample_bytree': hp.quniform('colsample_bytree', 0.8, 1, 0.02),
+            'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
             # 'max_delta_step': xgbparams.max_delta_step,  # 0,
             # colsample_bylevel = 1,
             # reg_alpha = 0,
@@ -217,7 +221,7 @@ def run():
             'seed': seedRound,
             # 'missing': None,
             'xgbArgs': {
-                'num_boost_round': 1250,
+                'num_boost_round': 1,#0000,
                 # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
                 'verbose_eval': 50,
             }}
@@ -229,47 +233,67 @@ def run():
         #replace this with a 5-fold CV if parameters are better known and all is tested for long runs
         X = train.drop(['ID','y'], axis=1)#.values
         y = train['y']#.values
+        test = test[train.drop('y', axis=1).columns]
+        test = test.drop('ID', axis=1)
+
         ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=params.seedRounds)
 
         if params.runXgbCV:
-            for train_index, test_index in ss.split(X):
+            kFold = KFold(n_splits=params.kfold, shuffle=True, random_state=seedRound)
+            xgbPredsTest=[]
+            xgbPredsTrain=[]
+            i=0
+            for train_index, test_index in kFold.split(X):
+                i += 1
+            # for train_index, test_index in ss.split(X):
                 print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
                 x_train, x_valid = X.iloc[train_index,:], X.iloc[test_index,:]
                 y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
-        else:
-            x_train = X
-            y_train = y
+        # else:
+        #     x_train = X
+        #     y_train = y
 
-        # NOTE: Make sure that the class is labeled 'class' in the data file
-        test = test[train.drop('y', axis=1).columns]
-        test = test.drop('ID', axis=1)
-        xgbMTrain = xgb.DMatrix(x_train, label=y_train, feature_names=x_train.columns)
-        xgbMTest = xgb.DMatrix(test, feature_names=test.columns)
-        if params.runXgbCV:  # run a CV
-            xgbMValid = xgb.DMatrix(x_valid, label=y_valid, feature_names=x_valid.columns)
-            # specify validations set to watch performance
-            xgbSpace['xgbArgs']['evals'] = [(xgbMTrain, 'train'), (xgbMValid, 'val')]
-            xgbSpace['xgbArgs']['evals_result'] = {}
-            xgbSpace['xgbArgs']['early_stopping_rounds'] = 50
+                xgbMTrain = xgb.DMatrix(x_train, label=y_train, feature_names=x_train.columns)
+                xgbMTest = xgb.DMatrix(test, feature_names=test.columns)
+                if params.runXgbCV:  # run a CV
+                    xgbMValid = xgb.DMatrix(x_valid, label=y_valid, feature_names=x_valid.columns)
+                    # specify validations set to watch performance
+                    xgbSpace['xgbArgs']['evals'] = [(xgbMTrain, 'train'), (xgbMValid, 'val')]
+                    xgbSpace['xgbArgs']['evals_result'] = {}
+                    xgbSpace['xgbArgs']['early_stopping_rounds'] = 50
 
-        xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
-        best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
-        xgbmodel = hyperOptTrials.best_trial['result']['model']
-        # pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
-        #            batch=0)
-        if params.runXgbCV:
-            bestIter = hyperOptTrials.best_trial['result']['bestIter']
-            Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
-            Logger.info('XGB CV bestIter: {}'.format(hyperOptTrials.best_trial['result']['bestIter']))
+                xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
+                best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
+                xgbmodel = hyperOptTrials.best_trial['result']['model']
+                pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
+                           batch=params.batch)
+                Logger.info('Fold: {} - best hyperopt params: {}'.format(i, best_params))
 
-        xgbPred = xgbmodel.predict(xgbMTest)
-        xgbPredTrain = xgbmodel.predict(xgbMTrain)
-        r2Train = r2_score(y_train, xgbPredTrain)
-        Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, 0))
+                if params.runXgbCV:
+                    bestIter = hyperOptTrials.best_trial['result']['bestIter']
+                    Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
+                    Logger.info('XGB CV bestIter: {}'.format(hyperOptTrials.best_trial['result']['bestIter']))
 
+                xgbPredsTest.append( xgbmodel.predict(xgbMTest) )
+                xgbPredsTrain.append( xgbmodel.predict(xgbMTrain) )
+                r2Train = r2_score(y_train, xgbPredsTrain[-1])
+                Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, 0))
+
+        pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
+                   batch=0)
+        xgbPredTest = np.sum(xgbPredsTest, axis=0) / params.kfold
+        xgbPredTrain = np.sum(xgbPredsTrain, axis=0) / params.kfold
+        subTrain = pd.DataFrame()
+        subTest = pd.DataFrame()
+        subTest['y'] = xgbPredTest
+        subTrain['y'] = xgbPredTrain
+        subTest.to_csv(os.path.join(projectDir, r'subm/myBenzFCVTestirstxgbModel-{}.csv'.format(
+            datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+        subTrain.to_csv(os.path.join(projectDir, r'subm/myBenzCVTrainFirstxgbModel-{}.csv'.format(
+            datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
         #Stack its predictions
         train['y_XGB'] = xgbPredTrain
-        test['y_XGB'] = xgbPred
+        test['y_XGB'] = xgbPredTest
 
         '''2. Train stacked models & predict the test data'''
 
@@ -326,7 +350,7 @@ def run():
         '''4. TPOT automated ML approach'''
         from tpot import TPOTRegressor
         train = train.drop('ID', axis=1)
-        auto_classifier = TPOTRegressor(generations=100, population_size=15, verbosity=2)
+        auto_classifier = TPOTRegressor(generations=1, population_size=1, verbosity=2)
         from sklearn.model_selection import train_test_split
 
         X_train, X_valid, y_train, y_valid = train_test_split(train, train['y'],
@@ -336,6 +360,7 @@ def run():
         #            batch=0)
         Logger.info('The cross-validation MSE: {}'.format(auto_classifier.score(X_valid, y_valid)))
         auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
+
         # we need access to the pipeline to get the probabilities
         y_tpot = auto_classifier.predict(test)
         if True:

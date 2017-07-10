@@ -47,7 +47,7 @@ def run():
         ('runXgbCV', True),
         ('seedRounds', 1),
         ('kfold', 5),
-        ('max_evals', 50),
+        ('max_evals', 5),
         ('xbgnum_boost_round', 10000),
 
         ('saveXgbModel', 1),
@@ -202,12 +202,12 @@ def run():
             # A problem with max_depth casted to float instead of int with
             # the hp.quniform method.
             'max_depth': hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
-            'min_child_weight': hp.quniform('min_child_weight', 1, 6, 1),
+            'min_child_weight': hp.choice('min_child_weight', 1, 4, 1),
             'subsample': hp.quniform('subsample', 0.85, 0.95, 0.02), #0.93,
             'n_trees': hp.quniform('n_trees', 400, 700, 10),  #520,
             'gamma': hp.quniform('gamma', 0.15, 0.25, 0.02),
-            'colsample_bytree': 0.9,#hp.quniform('colsample_bytree', 0.8, 1, 0.02),
-            'colsample_bylevel': 0.9, #hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
+            'colsample_bytree': hp.quniform('colsample_bytree', 0.8, 1, 0.02), #0.9,#
+            'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02), #0.9, #h
             # 'max_delta_step': xgbparams.max_delta_step,  # 0,
             # colsample_bylevel = 1,
             # reg_alpha = 0,
@@ -229,7 +229,6 @@ def run():
         if args.gpu != '0':
             xgbSpace['updater'] = args.gpu
 
-        hyperOptTrials = Trials()
         params.batch = seedRound
         #replace this with a 5-fold CV if parameters are better known and all is tested for long runs
         X = train.drop(['ID','y'], axis=1)#.values
@@ -261,6 +260,7 @@ def run():
                     xgbSpace['xgbArgs']['evals_result'] = {}
                     xgbSpace['xgbArgs']['early_stopping_rounds'] = 50
 
+                hyperOptTrials = Trials()
                 xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
                 best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
                 xgbmodel = hyperOptTrials.best_trial['result']['model']
@@ -276,9 +276,10 @@ def run():
                 r2Train = r2_score(y, xgbPredsTrain[-1])
                 Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, i))
                 print('next fold')
+                pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
+                   batch=i)
 
-        pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
-                   batch=0)
+
         xgbPredTest = np.sum(xgbPredsTest, axis=0) / params.kfold
         xgbPredTrain = np.sum(xgbPredsTrain, axis=0) / params.kfold
         subTrain = pd.DataFrame()

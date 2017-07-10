@@ -203,11 +203,11 @@ def run():
             # the hp.quniform method.
             'max_depth': hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
             'min_child_weight': hp.quniform('min_child_weight', 1, 6, 1),
-            'subsample': hp.quniform('subsample', 0.9, 1, 0.02), #0.93,
-            'n_trees': 520,
-            'gamma': hp.quniform('gamma', 0, 0.2, 0.02),
-            'colsample_bytree': hp.quniform('colsample_bytree', 0.8, 1, 0.02),
-            'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
+            'subsample': hp.quniform('subsample', 0.85, 0.95, 0.02), #0.93,
+            'n_trees': hp.quniform('n_trees', 400, 700, 10),  #520,
+            'gamma': hp.quniform('gamma', 0.15, 0.25, 0.02),
+            'colsample_bytree': 0.9,#hp.quniform('colsample_bytree', 0.8, 1, 0.02),
+            'colsample_bylevel': 0.9, #hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
             # 'max_delta_step': xgbparams.max_delta_step,  # 0,
             # colsample_bylevel = 1,
             # reg_alpha = 0,
@@ -247,13 +247,10 @@ def run():
             i=0
             for train_index, test_index in kFold.split(X):
                 i += 1
-            # for train_index, test_index in ss.split(X):
+                # for train_index, test_index in ss.split(X):
                 print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
                 x_train, x_valid = X.iloc[train_index,:], X.iloc[test_index,:]
                 y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
-        # else:
-        #     x_train = X
-        #     y_train = y
 
                 xgbMTrain = xgb.DMatrix(x_train, label=y_train, feature_names=x_train.columns)
                 xgbMTest = xgb.DMatrix(test, feature_names=test.columns)
@@ -270,16 +267,15 @@ def run():
                 pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
                            batch=params.batch)
                 Logger.info('Fold: {} - best hyperopt params: {}'.format(i, best_params))
-
                 if params.runXgbCV:
                     bestIter = hyperOptTrials.best_trial['result']['bestIter']
                     # Logger.info('XGB CV evals result: {}'.format(hyperOptTrials.best_trial['result']['evals_result']))
                     Logger.info('XGB CV bestIter: {}'.format(hyperOptTrials.best_trial['result']['bestIter']))
-
                 xgbPredsTest.append( xgbmodel.predict(xgbMTest) )
                 xgbPredsTrain.append( xgbmodel.predict(xgbMTrainWhole) )
                 r2Train = r2_score(y, xgbPredsTrain[-1])
-                Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, 0))
+                Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, i))
+                print('next fold')
 
         pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
                    batch=0)

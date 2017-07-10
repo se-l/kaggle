@@ -533,7 +533,7 @@ def run():
 
 
     # ENSMBLE for each model
-    xgb = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
+    xgbsub = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
     stack = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
     tpot = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
 

@@ -46,8 +46,8 @@ def run():
         ('polyFeat', False),
         ('runXgbCV', True),
         ('seedRounds', 1),
-        ('kfold', 5),
-        ('max_evals', 50),
+        ('kfold', 10),
+        ('max_evals', 1),
         ('xbgnum_boost_round', 10000),
 
         ('saveXgbModel', 1),
@@ -201,13 +201,13 @@ def run():
             'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
             # A problem with max_depth casted to float instead of int with
             # the hp.quniform method.
-            'max_depth': hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
-            'min_child_weight': hp.choice('min_child_weight', np.arange(1, 4, dtype=int)), #1,
-            'subsample': hp.quniform('subsample', 0.85, 1, 0.02), #0.93,
-            'n_trees': hp.quniform('n_trees', 400, 700, 50),  #520,
-            'gamma': hp.quniform('gamma', 0, 0.2, 0.02),
-            'colsample_bytree': hp.quniform('colsample_bytree', 0.8, 1, 0.02), #0.9,#
-            'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02), #0.9, #h
+            'max_depth': 3,  # hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
+            'min_child_weight': 2,  # hp.quniform('min_child_weight', 1, 6, 1),
+            'subsample': 0.95,  # hp.quniform('subsample', 0.9, 1, 0.02), #
+            'n_trees': 620,
+            'gamma': 0.1,  # hp.quniform('gamma', 0, 0.2, 0.02),
+            'colsample_bytree': 0.92,  # hp.quniform('colsample_bytree', 0.8, 1, 0.02),
+            'colsample_bylevel': 0.94,  # hp.quniform('colsample_bylevel', 0.8, 1, 0.02),
             # 'max_delta_step': xgbparams.max_delta_step,  # 0,
             # colsample_bylevel = 1,
             # reg_alpha = 0,
@@ -264,8 +264,8 @@ def run():
                 xgbFunc = partial(mbz.xgbTrain, xgbMTrain=xgbMTrain, params=params)
                 best_params = mbz.optimize(space=xgbSpace, scoreF=xgbFunc, trials=hyperOptTrials, params=params)
                 xgbmodel = hyperOptTrials.best_trial['result']['model']
-                pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
-                           batch=params.batch)
+                # pickleAway(xgbmodel, ex='ex{}'.format(params.ex), fileNStart='xgbModel', dir1=projectDir, dir2='model',
+                #            batch=params.batch)
                 Logger.info('Fold: {} - best hyperopt params: {}'.format(i, best_params))
                 if params.runXgbCV:
                     bestIter = hyperOptTrials.best_trial['result']['bestIter']
@@ -276,8 +276,8 @@ def run():
                 r2Train = r2_score(y, xgbPredsTrain[-1])
                 Logger.info('xgb R2 Train - {}, seed-{}, fold-{}'.format(r2Train, seedRound, i))
                 print('next fold')
-                pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
-                   batch=i)
+                # pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
+                #    batch=i)
 
 
         xgbPredTest = np.sum(xgbPredsTest, axis=0) / params.kfold

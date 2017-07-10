@@ -47,7 +47,7 @@ def run():
         ('runXgbCV', True),
         ('seedRounds', 1),
         ('kfold', 5),
-        ('max_evals', 5),
+        ('max_evals', 50),
         ('xbgnum_boost_round', 10000),
 
         ('saveXgbModel', 1),
@@ -202,10 +202,10 @@ def run():
             # A problem with max_depth casted to float instead of int with
             # the hp.quniform method.
             'max_depth': hp.choice('max_depth', np.arange(3, 6, dtype=int)), #4,
-            'min_child_weight': hp.quniform('min_child_weight', 1, 4, 1),
-            'subsample': hp.quniform('subsample', 0.85, 0.95, 0.02), #0.93,
-            'n_trees': hp.quniform('n_trees', 400, 700, 10),  #520,
-            'gamma': hp.quniform('gamma', 0.15, 0.25, 0.02),
+            'min_child_weight': hp.choice('min_child_weight', np.arange(1, 4, dtype=int)), #1,
+            'subsample': hp.quniform('subsample', 0.85, 1, 0.02), #0.93,
+            'n_trees': hp.quniform('n_trees', 400, 700, 50),  #520,
+            'gamma': hp.quniform('gamma', 0, 0.2, 0.02),
             'colsample_bytree': hp.quniform('colsample_bytree', 0.8, 1, 0.02), #0.9,#
             'colsample_bylevel': hp.quniform('colsample_bylevel', 0.8, 1, 0.02), #0.9, #h
             # 'max_delta_step': xgbparams.max_delta_step,  # 0,

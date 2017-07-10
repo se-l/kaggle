@@ -46,8 +46,8 @@ def run():
         ('polyFeat', False),
         ('runXgbCV', True),
         ('seedRounds', 1),
-        ('kfold', 2),
-        ('max_evals', 2),
+        ('kfold', 5),
+        ('max_evals', 100),
 
         ('saveXgbModel', 1),
         ('saveXgbFeatImp', 1),
@@ -221,7 +221,7 @@ def run():
             'seed': seedRound,
             # 'missing': None,
             'xgbArgs': {
-                'num_boost_round': 1,#0000,
+                'num_boost_round': 10000,
                 # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
                 'verbose_eval': 50,
             }}

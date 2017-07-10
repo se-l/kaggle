@@ -418,7 +418,7 @@ def run():
     from tpot import TPOTRegressor
     test_ids = test['ID']
     train = train.drop('ID', axis=1)
-    auto_classifier = TPOTRegressor(generations=100, population_size=50, verbosity=2)
+    auto_classifier = TPOTRegressor(generations=30, population_size=15, verbosity=2)
     from sklearn.model_selection import train_test_split
 
     X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],

@@ -45,7 +45,7 @@ def run():
         ('addX0groups', True),
         ('polyFeat', False),
         ('runXgbCV', False),
-        ('readOL', True),
+        ('readOL', False),
         ('seedRounds', 1),
         ('kfold', 1),
         ('max_evals', 100),

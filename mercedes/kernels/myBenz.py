@@ -326,15 +326,16 @@ def run():
         '''4. TPOT automated ML approach'''
         from tpot import TPOTRegressor
         train = train.drop('ID', axis=1)
-        auto_classifier = TPOTRegressor(generations=2, population_size=8, verbosity=2)
+        auto_classifier = TPOTRegressor(generations=100, population_size=15, verbosity=2)
         from sklearn.model_selection import train_test_split
 
         X_train, X_valid, y_train, y_valid = train_test_split(train, train['y'],
                                                               train_size=0.75, test_size=0.25)
         auto_classifier.fit(X_train, y_train)
-        pickleAway(auto_classifier, ex='ex{}'.format(params.ex), fileNStart='tpotModel', dir1=projectDir, dir2='model',
-                   batch=0)
+        # pickleAway(auto_classifier, ex='ex{}'.format(params.ex), fileNStart='tpotModel', dir1=projectDir, dir2='model',
+        #            batch=0)
         Logger.info('The cross-validation MSE: {}'.format(auto_classifier.score(X_valid, y_valid)))
+        auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
         # we need access to the pipeline to get the probabilities
         y_tpot = auto_classifier.predict(test)
         if True:

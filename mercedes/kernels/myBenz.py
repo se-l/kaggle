@@ -147,17 +147,17 @@ def run():
         train.insert(0, 'ID', train_ids)
         train.insert(0, 'y', y_train)
         test.insert(0, 'ID', test_ids)
-        if params.readOL:
-            train_OL = pd.read_csv(os.path.join(projectDir, 'model/train-outliers.csv'))
-        else:
-            train_OL = fbz.findOutliers(train.copy(), train_data, train_ids, test.copy(), test_data, target=y_train)
+        # if params.readOL:
+        #     train_OL = pd.read_csv(os.path.join(projectDir, 'model/train-outliers.csv'))
+        # else:
+            # train_OL = fbz.findOutliers(train.copy(), train_data, train_ids, test.copy(), test_data, target=y_train)
 
         # train.drop(['isof', 'outlier_score'], axis=1, inplace=True)
         # test.drop(['isof'], axis=1, inplace=True)
-        train = fbz.rmOutliers(train, train_OL)
+        # train = fbz.rmOutliers(train, train_OL)
         #optional, drop y outliers  by Liam
         train = train[train.y < 250] # Optional: Drop y outliers
-        train = train.drop(np.where((train.loc[:,'ID'] == 0)==True)[0])
+        # train = train.drop(np.where((train.loc[:,'ID'] == 0)==True)[0])
 
     #add leaks to train data
     if params.leaksToTrain:
@@ -418,7 +418,7 @@ def run():
     from tpot import TPOTRegressor
     test_ids = test['ID']
     train = train.drop('ID', axis=1)
-    auto_classifier = TPOTRegressor(generations=3, population_size=5, verbosity=2)
+    auto_classifier = TPOTRegressor(generations=4, population_size=5, verbosity=2)
     from sklearn.model_selection import train_test_split
 
     X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],

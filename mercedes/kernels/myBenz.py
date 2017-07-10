@@ -46,7 +46,7 @@ def run():
         ('polyFeat', False),
         ('runXgbCV', False),
         ('readOL', False),
-        ('seedRounds', 1),
+        ('seedRounds', 10),
         ('kfold', 1),
         ('max_evals', 1),
 
@@ -309,21 +309,26 @@ def run():
 
         # pickleAway(hyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='xgbHyperOptTrial', dir1=projectDir, dir2='hyperOptTrials',
         #            batch=0)
-        xgbPredTest = np.sum(xgbPredsTest, axis=0) / params.kfold
-        xgbPredTrain = np.sum(xgbPredsTrain, axis=0) / params.kfold
-        subTrain = pd.DataFrame()
-        subTest = pd.DataFrame()
-        subTest['y'] = xgbPredTest
-        subTrain['y'] = xgbPredTrain
-        subTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestirstxgbModel-{}.csv'.format(
-            datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
-        # subTrain.to_csv(os.path.join(projectDir, r'subm/myBenzTrainFirstxgbModel-{}.csv'.format(
-        #     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
-        #Stack its predictions
-        train['y_XGB'] = xgbPredTrain
-        test['y_XGB'] = xgbPredTest
+    xgbPredTest = np.sum(xgbPredsTest, axis=0) / ( params.kfold * ( params.seedRounds + 1))
+    xgbPredTrain = np.sum(xgbPredsTrain, axis=0) / ( params.kfold * ( params.seedRounds + 1))
+    subTrain = pd.DataFrame()
+    subTest = pd.DataFrame()
+    subTest['y'] = xgbPredTest
+    subTrain['y'] = xgbPredTrain
+    subTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestirstxgbModel-{}.csv'.format(
+        datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+    # subTrain.to_csv(os.path.join(projectDir, r'subm/myBenzTrainFirstxgbModel-{}.csv'.format(
+    #     datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+    #Stack its predictions
+    train['y_XGB'] = xgbPredTrain
+    test['y_XGB'] = xgbPredTest
+
+    for seedRound in range(0, params.seedRounds):
+        np.random.seed(seedRound)
 
         '''2. Train stacked models & predict the test data'''
+        stTrainPreds=[]
+        stTestPreds=[]
 
         stSpace = {
             'learning_rate': 0.0001,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
@@ -360,181 +365,167 @@ def run():
         st_model = stHyperOptTrials.best_trial['result']['model']
         # pickleAway(stHyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='stHyperOptTrial', dir1=projectDir,
         #            dir2='hyperOptTrials', batch=0)
-        skStackPredTrain = st_model.predict(stack_trainset)
-        skStackPredTest = st_model.predict(stack_testset)
-        Logger.info('Best Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
+        stTrainPreds.append(st_model.predict(stack_trainset))
+        stTestPreds.append(st_model.predict(stack_testset))
 
-        sub = pd.DataFrame()
-        sub['y'] = skStackPredTest
-        sub.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
+    skStackPredTest = np.sum(stTestPreds, axis=0) / (params.seedRounds + 1)
+    skStackPredTrain = np.sum(stTrainPreds, axis=0) / (params.seedRounds + 1)
+    Logger.info('Best Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
+
+    sub = pd.DataFrame()
+    sub['y'] = skStackPredTest
+    sub.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
+        datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+
+
+    train['y_SK'] = skStackPredTrain
+    test['y_SK'] = skStackPredTest
+
+    '''3. Neural networks model'''
+    if False:
+        nnSpace = dotdict([
+            #####################
+            # Neural Network
+            #####################
+            # Training steps
+            ('STEPS', 500),
+            ('LEARNING_RATE', 1),# 0.0001),
+            ('BETA', 0.01),
+            ('DROPOUT', 0.5),
+            ('RANDOM_SEED', 12345),
+            ('MAX_Y', 250),
+            ('RESTORE', True),
+            ('START', 0),
+            # Training variables
+            ('IN_DIM', 13),
+            # Network Parameters - Hidden layers
+            ('n_hidden_1', 100),
+            ('n_hidden_2', 50),
+        ])
+        nnHyperOptTrials = Trials()
+        nnFunc = partial(mbz.deepNN, train=train, y_train=train['y'])
+        nnBest_params = mbz.optimize(space=nnSpace, scoreF=nnFunc, trials=nnHyperOptTrials, params=params)
+        nnModel = nnHyperOptTrials.best_trial['result']['model']
+
+        #Convert to matrix
+        test_submit = test.as_matrix()
+        test_submit_id = test_ids
+
+    '''4. TPOT automated ML approach'''
+    from tpot import TPOTRegressor
+    train = train.drop('ID', axis=1)
+    auto_classifier = TPOTRegressor(generations=1, population_size=1, verbosity=2)
+    from sklearn.model_selection import train_test_split
+
+    X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],
+                                                          train_size=0.75, test_size=0.25)
+    auto_classifier.fit(X_train, y_train)
+    # pickleAway(auto_classifier, ex='ex{}'.format(params.ex), fileNStart='tpotModel', dir1=projectDir, dir2='model',
+    #            batch=0)
+    Logger.info('The cross-validation MSE: {}'.format(auto_classifier.score(X_valid, y_valid)))
+    # auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
+
+    # we need access to the pipeline to get the probabilities
+    y_tpot = auto_classifier.predict(test)
+    y_train_tpot = auto_classifier.predict(train.drop('y', axis=1))
+    Logger.info('Tpot R2 on train data: {}'.format(r2_score(train['y'], y_train_tpot)))
+    if True:
+        sub_tpot = pd.DataFrame()
+        sub_tpot['ID'] = test_ids
+        sub_tpot['y'] = y_tpot
+        sub_tpot.to_csv(os.path.join(projectDir, r'subm/myBenzTpotModel-{}.csv'.format(
             datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
-        return 
-        # stacked_pipeline = make_pipeline(
-        #     StackingEstimator(estimator=LassoLarsCV(normalize=True)),
-        #     StackingEstimator(estimator=GradientBoostingRegressor(
-        #         learning_rate=0.001,
-        #         loss="huber",
-        #         max_depth=3,
-        #         max_features=0.55,
-        #         min_samples_leaf=18,
-        #         min_samples_split=14,
-        #         subsample=0.7)),
-        #     LassoLarsCV()
-        # )
-        # stacked_pipeline.fit(stack_trainset, stack_y_train)
-        # skStackPred = stacked_pipeline.predict(stack_testset)
-        # skStackPredTrain = stacked_pipeline.predict(stack_trainset)
-        # Logger.info('Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train,skStackPredTrain)))
+    '''6. LGBM'''
+    if False:
+        import lightgbm as lgb
 
-        train['y_SK'] = skStackPredTrain
-        test['y_SK'] = skStackPredTest
+        ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=params.seedRounds)
+        for train_index, test_index in ss.split(X):
+            print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
+            x_train, x_valid = X.iloc[train_index, :], X.iloc[test_index, :]
+            y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
 
-        '''3. Neural networks model'''
-        if False:
-            nnSpace = dotdict([
-                #####################
-                # Neural Network
-                #####################
-                # Training steps
-                ('STEPS', 500),
-                ('LEARNING_RATE', 1),# 0.0001),
-                ('BETA', 0.01),
-                ('DROPOUT', 0.5),
-                ('RANDOM_SEED', 12345),
-                ('MAX_Y', 250),
-                ('RESTORE', True),
-                ('START', 0),
-                # Training variables
-                ('IN_DIM', 13),
-                # Network Parameters - Hidden layers
-                ('n_hidden_1', 100),
-                ('n_hidden_2', 50),
-            ])
-            nnHyperOptTrials = Trials()
-            nnFunc = partial(mbz.deepNN, train=train, y_train=train['y'])
-            nnBest_params = mbz.optimize(space=nnSpace, scoreF=nnFunc, trials=nnHyperOptTrials, params=params)
-            nnModel = nnHyperOptTrials.best_trial['result']['model']
+        lgbSpace = {
+            'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
+            'max_depth': 4,  # hp.choice('max_depth', np.arange(3, 10, dtype=int)),
+            'subsample': 0.93,  # hp.quniform('subsample', 0.5, 1, 0.1),
+            'n_trees': 520,
+            'objective': 'reg:linear',
+            'metric': 'rmse',
+            'base_score': y_mean,  # base prediction = mean(y_train)
+            'silent': True,
+            # 'booster': xgbparams.booster,
+            'tree_method': 'exact',
+            'seed': seedRound,
+            # 'missing': None,
+            'xgbArgs': {
+                'num_iteration': 1250,
+                # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
+                'verbose_eval': 50,
+            }}
 
-            #Convert to matrix
-            test_submit = test.as_matrix()
-            test_submit_id = test_ids
+        lgbTrain = lgb.Dataset(x_train, label=y_train)
+        lgbValid = lgb.Dataset(x_valid, label=y_valid, reference=train_data)
+        lgbTest = lgb.Dataset(test)
 
-        '''4. TPOT automated ML approach'''
-        from tpot import TPOTRegressor
-        train = train.drop('ID', axis=1)
-        auto_classifier = TPOTRegressor(generations=1, population_size=1, verbosity=2)
-        from sklearn.model_selection import train_test_split
+        valid_sets = [train_data, test_data]
 
-        X_train, X_valid, y_train, y_valid = train_test_split(train.drop('y', axis=1), train['y'],
-                                                              train_size=0.75, test_size=0.25)
-        auto_classifier.fit(X_train, y_train)
-        # pickleAway(auto_classifier, ex='ex{}'.format(params.ex), fileNStart='tpotModel', dir1=projectDir, dir2='model',
-        #            batch=0)
-        Logger.info('The cross-validation MSE: {}'.format(auto_classifier.score(X_valid, y_valid)))
-        # auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
+        lgbFunc = partial(mbz.lgbTrain, args=args, xgbMTrain=lgbTrain, xgbMTest=lgbValid, params=params)
+        best_params = mbz.optimize(space=lgbSpace, scoreF=lgbFunc, trials=hyperOptTrials, params=params)
+        bestIter = hyperOptTrials.best_trial['result']['bestIter']
+        model = hyperOptTrials.best_trial['result']['model']
+        lgbPred = model.predict(lgbTest)
 
-        # we need access to the pipeline to get the probabilities
-        y_tpot = auto_classifier.predict(test)
-        y_train_tpot = auto_classifier.predict(train.drop('y', axis=1))
-        Logger.info('Tpot R2 on train data: {}'.format(r2_score(train['y'], y_train_tpot)))
-        if True:
-            sub_tpot = pd.DataFrame()
-            sub_tpot['ID'] = test_ids
-            sub_tpot['y'] = y_tpot
-            sub_tpot.to_csv(os.path.join(projectDir, r'subm/myBenzTpotModel-{}.csv'.format(
-                datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
+        ypred = lgbm.predict(xTest, num_iteration=lgbm.best_iteration)
 
-        '''6. LGBM'''
-        if False:
-            import lightgbm as lgb
+        # converting probabilities into 0 or 1
+        predBnry = [1 if x > 0.5 else 0 for x in ypred]
+        accuracy = accuracy_score(yTest, predBnry)
+        Logger.info("Accuracy : %.2f%%" % (accuracy * 100.0))
 
-            ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=params.seedRounds)
-            for train_index, test_index in ss.split(X):
-                print("TRAIN:", len(train_index), "VALIDATION:", len(test_index))
-                x_train, x_valid = X.iloc[train_index, :], X.iloc[test_index, :]
-                y_train, y_valid = y.iloc[train_index], y.iloc[test_index]
+        estimator = lgb.LGBMClassifier(nthread=-1,
+                                       silent=False)  # ,categorical_feature=[list(X_train).index(catFeature) for catFeature in categorical_features])
+        fit_params = None
+        fit_params = {
+            # 'num_round': param_grid['num_round'],
+            'eval_set': [(dTrain, yTrain), (dTest, yTest)],
+            # 'eval_metric': 'binary_log_loss',
+            'early_stopping_rounds': 5
+        }
+        # gbm.feature_importance_
+        Logger.debug('cv results: {}'.format(gbm.cv_results_))
+        Logger.debug('best estimator: {}'.format(gbm.best_estimator_))
+        Logger.debug('train_score: {}'.format(gbm.return_train_score))
+        Logger.debug('best score: {}'.format(gbm.best_score_))
 
-            lgbSpace = {
-                'learning_rate': 0.0045,  # hp.quniform('learning_rate', 0.01, 0.2, 0.01), alias: eta
-                'max_depth': 4,  # hp.choice('max_depth', np.arange(3, 10, dtype=int)),
-                'subsample': 0.93,  # hp.quniform('subsample', 0.5, 1, 0.1),
-                'n_trees': 520,
-                'objective': 'reg:linear',
-                'metric': 'rmse',
-                'base_score': y_mean,  # base prediction = mean(y_train)
-                'silent': True,
-                # 'booster': xgbparams.booster,
-                'tree_method': 'exact',
-                'seed': seedRound,
-                # 'missing': None,
-                'xgbArgs': {
-                    'num_iteration': 1250,
-                    # sample(scope.int(hp.quniform('num_boost_round', 100, 1000, 1))),
-                    'verbose_eval': 50,
-                }}
-
-            lgbTrain = lgb.Dataset(x_train, label=y_train)
-            lgbValid = lgb.Dataset(x_valid, label=y_valid, reference=train_data)
-            lgbTest = lgb.Dataset(test)
-
-            valid_sets = [train_data, test_data]
-
-            lgbFunc = partial(mbz.lgbTrain, args=args, xgbMTrain=lgbTrain, xgbMTest=lgbValid, params=params)
-            best_params = mbz.optimize(space=lgbSpace, scoreF=lgbFunc, trials=hyperOptTrials, params=params)
-            bestIter = hyperOptTrials.best_trial['result']['bestIter']
-            model = hyperOptTrials.best_trial['result']['model']
-            lgbPred = model.predict(lgbTest)
-
-            ypred = lgbm.predict(xTest, num_iteration=lgbm.best_iteration)
-
-            # converting probabilities into 0 or 1
-            predBnry = [1 if x > 0.5 else 0 for x in ypred]
-            accuracy = accuracy_score(yTest, predBnry)
-            Logger.info("Accuracy : %.2f%%" % (accuracy * 100.0))
-
-            estimator = lgb.LGBMClassifier(nthread=-1,
-                                           silent=False)  # ,categorical_feature=[list(X_train).index(catFeature) for catFeature in categorical_features])
-            fit_params = None
-            fit_params = {
-                # 'num_round': param_grid['num_round'],
-                'eval_set': [(dTrain, yTrain), (dTest, yTest)],
-                # 'eval_metric': 'binary_log_loss',
-                'early_stopping_rounds': 5
-            }
-            # gbm.feature_importance_
-            Logger.debug('cv results: {}'.format(gbm.cv_results_))
-            Logger.debug('best estimator: {}'.format(gbm.best_estimator_))
-            Logger.debug('train_score: {}'.format(gbm.return_train_score))
-            Logger.debug('best score: {}'.format(gbm.best_score_))
-
-            ypred = gbm.predict(dTest)  # , num_iteration=gbm.best_iteration)
-            # converting probabilities into 0 or 1
-            predBnry = [1 if x > 0.5 else 0 for x in ypred]
-            accuracy = accuracy_score(yTest, predBnry)
-            accuracy
-            Logger.info("Accuracy : %.2f%%" % (accuracy * 100.0))
-        # note that talibs are generated with function A
-        # dotdict(function, function, category)
+        ypred = gbm.predict(dTest)  # , num_iteration=gbm.best_iteration)
+        # converting probabilities into 0 or 1
+        predBnry = [1 if x > 0.5 else 0 for x in ypred]
+        accuracy = accuracy_score(yTest, predBnry)
+        accuracy
+        Logger.info("Accuracy : %.2f%%" % (accuracy * 100.0))
+    # note that talibs are generated with function A
+    # dotdict(function, function, category)
 
 
-                # just list feats that can be engineered. a dic, featName, function that gens it, inp, out
-                # kind copy talibs design for this
+            # just list feats that can be engineered. a dic, featName, function that gens it, inp, out
+            # kind copy talibs design for this
 
 
-            '''R2 Score on the entire Train data when averaging'''
+        '''R2 Score on the entire Train data when averaging'''
 
-            print('R2 score on train data:')
-            # r2_score(train['y'], y)
-            print(r2_score(y_train,stacked_pipeline.predict(finaltrainset)*0.2855 + model.predict(xgbMTrain)*0.7145))
+        print('R2 score on train data:')
+        # r2_score(train['y'], y)
+        print(r2_score(y_train,stacked_pipeline.predict(finaltrainset)*0.2855 + model.predict(xgbMTrain)*0.7145))
 
-            '''Average the preditionon test data  of both models then save it on a csv file'''
+        '''Average the preditionon test data  of both models then save it on a csv file'''
 
 
-            # ENSEMBLE all weighted by public leaderboard score
-            # or first majority vote, then weight of local CV
-            sub = pd.DataFrame()
-            sub['y'] += xgbPred*0.75 + skStackPred*0.25
+        # ENSEMBLE all weighted by public leaderboard score
+        # or first majority vote, then weight of local CV
+        sub = pd.DataFrame()
+        sub['y'] += xgbPred*0.75 + skStackPred*0.25
 
 
     # ENSMBLE for each model

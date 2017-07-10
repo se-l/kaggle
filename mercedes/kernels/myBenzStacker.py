@@ -45,7 +45,7 @@ def run():
         ('addX0groups', True),
         ('polyFeat', False),
         ('runXgbCV', False),
-        ('readOL', False),
+        ('readOL', True),
         ('seedRounds', 1),
         ('kfold', 1),
         ('max_evals', 100),
@@ -351,6 +351,8 @@ def run():
                 'model': stacked_pipeline
                 }
 
+        print(params)
+        params['max_evals']=100
         stHyperOptTrials = Trials()
         stackFunc = partial(stackedPred, stack_trainset=stack_trainset, stack_y_train=stack_y_train)
         best_params = mbz.optimize(space=stSpace, scoreF=stackFunc, trials=stHyperOptTrials, params=params)

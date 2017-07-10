@@ -316,6 +316,7 @@ def run():
     subTest = pd.DataFrame()
     subTest['y'] = xgbPredTest
     subTrain['y'] = xgbPredTrain
+    subTest['ID'] = test_ids
     subTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestirstxgbModel-{}.csv'.format(
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
     # subTrain.to_csv(os.path.join(projectDir, r'subm/myBenzTrainFirstxgbModel-{}.csv'.format(
@@ -375,6 +376,7 @@ def run():
 
     sub = pd.DataFrame()
     sub['y'] = skStackPredTest
+    sub['ID'] = test_ids
     sub.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
         datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
@@ -531,10 +533,11 @@ def run():
 
 
     # ENSMBLE for each model
+    xgb = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
+    stack = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
+    tpot = pd.read_csv(os.path.join(projectDir, r'subm/final/'), index=False)
 
-
-    #Divide by number of seed runs
-    sub['y'] /= params.seedRounds + 1
+    sub['y'] += xgb * 0.75 + stack * 0.25
 
     if params.leaksIntoSub:
         sub = fbz.leaksIntoSub(sub)

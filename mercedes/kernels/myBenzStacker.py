@@ -358,11 +358,15 @@ def run():
         best_params = mbz.optimize(space=stSpace, scoreF=stackFunc, trials=stHyperOptTrials, params=params)
         Logger.info('Best stack hyperopt params: {}'.format(best_params))
         st_model = stHyperOptTrials.best_trial['result']['model']
+        pickleAway(stHyperOptTrials, ex='ex{}'.format(params.ex), fileNStart='stHyperOptTrial', dir1=projectDir,
+                   dir2='hyperOptTrials', batch=0)
         skStackPredTrain = st_model.predict(stack_trainset)
         skStackPredTest = st_model.predict(stack_testset)
         Logger.info('Best Stacked model: R2 on train data: {}'.format(r2_score(stack_y_train, skStackPredTrain)))
 
-        skStackPredTest.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
+        sub = pd.DataFrame()
+        sub['y'] = skStackPredTest
+        sub.to_csv(os.path.join(projectDir, r'subm/myBenzTestStackerModel-{}.csv'.format(
             datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))), index=False)
 
         return 
@@ -432,6 +436,8 @@ def run():
 
         # we need access to the pipeline to get the probabilities
         y_tpot = auto_classifier.predict(test)
+        y_train_tpot = auto_classifier.predict(train.drop('y', axis=1))
+        Logger.info('Tpot R2 on train data: {}'.format(r2_score(train['y'], y_train_tpot)))
         if True:
             sub_tpot = pd.DataFrame()
             sub_tpot['ID'] = test_ids

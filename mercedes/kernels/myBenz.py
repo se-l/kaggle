@@ -263,7 +263,7 @@ def run():
         testxgb = test[train.drop('y', axis=1).columns]
         testxgb = testxgb.drop('ID', axis=1)
 
-        ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=params.seedRounds)
+        ss = ShuffleSplit(n_splits=2, test_size=0.2, random_state=seedRound)
         xgbPredsTest = []
         xgbPredsTrain = []
 
@@ -427,7 +427,7 @@ def run():
     # auto_classifier.export(os.path.join(projectDir, r'model/tpotClassifier'))
 
     # we need access to the pipeline to get the probabilities
-    y_tpot = auto_classifier.predict(test)
+    y_tpot = auto_classifier.predict(test.drop('ID', axis=1))
     y_train_tpot = auto_classifier.predict(train.drop('y', axis=1))
     Logger.info('Tpot R2 on train data: {}'.format(r2_score(train['y'], y_train_tpot)))
     if True:
